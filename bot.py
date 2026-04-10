@@ -12,13 +12,13 @@ from telegram.ext import (
 # =========================
 # CONFIG
 # =========================
-TOKEN = "8662376885:AAHBROjjwfwcdHlj0yzIsOf6Zd2koz6VZM4"
-CHAT_ID = "-1003622167197"
+TOKEN = "COLOCAR TOKEN AQUI"
+CHAT_ID = "COLOCAR CHAT_ID AQUI"
 
 # Defina sua chave no sistema com:
 # Windows PowerShell:
 # setx OPENAI_API_KEY "sua_chave_aqui"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_API_KEY = os.getenv("COLOCAR OPENAI_API_KEY AQUI", "").strip()
 
 # =========================
 # OPENAI OPCIONAL
