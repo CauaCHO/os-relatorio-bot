@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.env
+data/historico_relatorios.json
+data/usuarios_bot.json

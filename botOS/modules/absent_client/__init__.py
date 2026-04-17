@@ -1,0 +1,1 @@
+# Pacote cliente ausente / O.S. paralisada

@@ -1,0 +1,1 @@
+# Pacote do módulo de retirada de equipamentos
