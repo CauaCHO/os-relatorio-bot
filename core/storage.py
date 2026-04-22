@@ -1,51 +1,111 @@
 import json
-from pathlib import Path
+import os
 from datetime import datetime
-from config import ARQUIVO_HISTORICO, ARQUIVO_USUARIOS
 
-arquivo_historico = Path(ARQUIVO_HISTORICO)
-arquivo_usuarios = Path(ARQUIVO_USUARIOS)
+BASE_DIR = "data"
 
-
-def _garantir_pasta(path: Path):
-    path.parent.mkdir(parents=True, exist_ok=True)
+ARQ_HISTORICO = f"{BASE_DIR}/historico_relatorios.json"
+ARQ_USUARIOS = f"{BASE_DIR}/usuarios_bot.json"
+ARQ_PENDENCIAS = f"{BASE_DIR}/os_paralisadas.json"
 
 
-def _ler_json(path: Path, default):
-    _garantir_pasta(path)
-    if not path.exists():
+def garantir_pasta():
+    os.makedirs(BASE_DIR, exist_ok=True)
+
+
+def carregar_json(arquivo, default):
+    garantir_pasta()
+
+    if not os.path.exists(arquivo):
+        with open(arquivo, "w", encoding="utf-8") as f:
+            json.dump(default, f, ensure_ascii=False, indent=4)
         return default
+
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
         return default
 
 
-def _escrever_json(path: Path, data):
-    _garantir_pasta(path)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+def salvar_json(arquivo, dados):
+    garantir_pasta()
+
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=4)
 
 
-def salvar_historico(dados: dict, relatorio: str, categoria: str = "O.S."):
-    historico = _ler_json(arquivo_historico, [])
+# =========================
+# HISTÓRICO
+# =========================
+
+def salvar_historico(dados, relatorio, modulo):
+    historico = carregar_json(ARQ_HISTORICO, [])
+
     historico.append({
-        "categoria": categoria,
+        "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "modulo": modulo,
         "os": dados.get("os", "-"),
-        "tipo": dados.get("tipo", "-"),
-        "tecnico_externo": dados.get("tec_ext", "-"),
-        "tecnico_interno": dados.get("tec_int", "-"),
-        "data_hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "relatorio": relatorio,
+        "tipo": dados.get("tipo", dados.get("ocorrencia", "-")),
+        "relatorio": relatorio
     })
-    _escrever_json(arquivo_historico, historico)
+
+    salvar_json(ARQ_HISTORICO, historico)
 
 
-def salvar_tecnico_usuario(user_id: int, tecnico_nome: str):
-    usuarios = _ler_json(arquivo_usuarios, {})
-    usuarios[str(user_id)] = tecnico_nome
-    _escrever_json(arquivo_usuarios, usuarios)
+# =========================
+# USUÁRIOS
+# =========================
+
+def salvar_tecnico_usuario(user_id, tecnico):
+    dados = carregar_json(ARQ_USUARIOS, {})
+    dados[str(user_id)] = tecnico
+    salvar_json(ARQ_USUARIOS, dados)
 
 
-def obter_tecnico_usuario(user_id: int):
-    usuarios = _ler_json(arquivo_usuarios, {})
-    return usuarios.get(str(user_id))
+def obter_tecnico_usuario(user_id):
+    dados = carregar_json(ARQ_USUARIOS, {})
+    return dados.get(str(user_id))
+
+
+# =========================
+# PENDÊNCIAS
+# =========================
+
+def salvar_pendencia(os_numero, motivo, usuario):
+    dados = carregar_json(ARQ_PENDENCIAS, [])
+
+    for item in dados:
+        if item["os"] == os_numero:
+            return
+
+    dados.append({
+        "os": os_numero,
+        "motivo": motivo,
+        "usuario": usuario,
+        "data": datetime.now().strftime("%d/%m/%Y %H:%M")
+    })
+
+    salvar_json(ARQ_PENDENCIAS, dados)
+
+
+def listar_pendencias():
+    return carregar_json(ARQ_PENDENCIAS, [])
+
+
+def obter_pendencia(os_numero):
+    dados = carregar_json(ARQ_PENDENCIAS, [])
+
+    for item in dados:
+        if item["os"] == os_numero:
+            return item
+
+    return None
+
+
+def remover_pendencia(os_numero):
+    dados = carregar_json(ARQ_PENDENCIAS, [])
+
+    dados = [x for x in dados if x["os"] != os_numero]
+
+    salvar_json(ARQ_PENDENCIAS, dados)
