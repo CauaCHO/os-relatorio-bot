@@ -4,13 +4,19 @@ from telegram.ext import ContextTypes
 from config import CHAT_ID
 from core.helpers import validar_os, validar_hora, normalizar_sinal, is_assistencia
 from core.text_processor import processar_texto, sugerir_solucao, languagetool_ativo
-from core.storage import salvar_historico, salvar_tecnico_usuario, obter_tecnico_usuario
+from core.storage import (
+    salvar_historico,
+    salvar_tecnico_usuario,
+    obter_tecnico_usuario,
+    obter_pendencia,
+    remover_pendencia,
+)
 from shared.commands import ajuda_texto, status_texto
 from shared.keyboards import (
     build_inline_keyboard,
     TIPOS_OPCOES, TECNICOS_OPCOES, SIM_NAO_OPCOES, PROBLEMAS_OPCOES,
     ENERGIA_OPCOES, CANAIS_24_OPCOES, CANAIS_5_OPCOES, CONFIRMACAO_ENVIO_OPCOES,
-    REINICIAR_FLUXO_OPCOES, GERAR_RETIRADA_OPCOES,
+    REINICIAR_FLUXO_OPCOES, GERAR_RETIRADA_OPCOES, REMOVER_PENDENCIA_OPCOES,
     TIPOS_MAP, TECNICOS_MAP, SIM_NAO_MAP, PROBLEMAS_MAP, ENERGIA_MAP
 )
 from modules.os_report.report import montar_relatorio
@@ -79,12 +85,6 @@ EDITAR_OS_OPCOES = [
 ]
 
 
-async def enviar_texto_longo(message, texto: str):
-    partes = [texto[i:i + 4000] for i in range(0, len(texto), 4000)]
-    for parte in partes:
-        await message.reply_text(parte, parse_mode="HTML")
-
-
 def montar_cabecalho_grupo(user) -> str:
     username = f"@{user.username}" if user.username else None
     nome = " ".join(x for x in [user.first_name, user.last_name] if x).strip()
@@ -100,26 +100,26 @@ async def enviar_grupo_longo(context: ContextTypes.DEFAULT_TYPE, texto: str, use
 
 
 async def ajuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ajuda_texto(), parse_mode="HTML")
+    await update.effective_message.reply_text(ajuda_texto(), parse_mode="HTML")
 
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fluxo_ativo = update.effective_user.id in usuarios
     step = usuarios.get(update.effective_user.id, {}).get("step")
-    await update.message.reply_text(
-        status_texto(fluxo_ativo, step, languagetool_ativo(), "Módulo de O.S."),
+    await update.effective_message.reply_text(
+        status_texto(fluxo_ativo, step, languagetool_ativo(), "Módulo de Atendimento"),
         parse_mode="HTML"
     )
 
 
 async def _solicitar_reinicio(update: Update):
-    await update.message.reply_text(
-        "⚠️ Você já possui um relatório O.S. em andamento.\n\nDeseja cancelar o fluxo atual e iniciar um novo?",
+    await update.effective_message.reply_text(
+        "⚠️ Você já possui um relatório de atendimento em andamento.\n\nDeseja cancelar o fluxo atual e iniciar um novo?",
         reply_markup=build_inline_keyboard("reiniciar_fluxo", REINICIAR_FLUXO_OPCOES)
     )
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def iniciar_fluxo_atendimento_generico(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
 
@@ -127,52 +127,109 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _solicitar_reinicio(update)
         return
 
-    usuarios[update.effective_user.id] = {"step": "os", "dados": {}, "pending_start": "normal"}
-    await update.message.reply_text("👋 Vamos iniciar o relatório.\n\n📌 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+    usuarios[update.effective_user.id] = {
+        "step": "os",
+        "dados": {},
+        "pending_start": "normal"
+    }
+    await update.effective_message.reply_text(
+        "🔧 Atendimento iniciado.\n\n📌 Digite o número da O.S.:",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
 
-async def assistencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def atendimento(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await iniciar_fluxo_atendimento_generico(update, context)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await iniciar_fluxo_atendimento_generico(update, context)
+
+
+async def iniciar_fluxo_assistencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
 
     if update.effective_user.id in usuarios:
         usuarios[update.effective_user.id]["pending_start"] = "assistencia"
-        await _solicitar_reinicio(update)
+        if getattr(update, "message", None):
+            await _solicitar_reinicio(update)
+        else:
+            await update.effective_message.reply_text("⚠️ Você já possui um relatório em andamento.\nUse /cancelar se quiser reiniciar.")
         return
 
-    usuarios[update.effective_user.id] = {"step": "os", "dados": {"tipo": "Assistência"}, "pending_start": None}
-    await update.message.reply_text("🛠️ Tipo definido: Assistência.\n\n📌 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+    usuarios[update.effective_user.id] = {
+        "step": "os",
+        "dados": {"tipo": "Assistência"},
+        "pending_start": None
+    }
+    await update.effective_message.reply_text(
+        "🛠️ Tipo definido: Assistência.\n\n📌 Digite o número da O.S.:",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
 
-async def instalacao(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def iniciar_fluxo_instalacao(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
 
     if update.effective_user.id in usuarios:
         usuarios[update.effective_user.id]["pending_start"] = "instalacao"
-        await _solicitar_reinicio(update)
+        if getattr(update, "message", None):
+            await _solicitar_reinicio(update)
+        else:
+            await update.effective_message.reply_text("⚠️ Você já possui um relatório em andamento.\nUse /cancelar se quiser reiniciar.")
         return
 
-    usuarios[update.effective_user.id] = {"step": "os", "dados": {"tipo": "Instalação"}, "pending_start": None}
-    await update.message.reply_text("📡 Tipo definido: Instalação.\n\n📌 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+    usuarios[update.effective_user.id] = {
+        "step": "os",
+        "dados": {"tipo": "Instalação"},
+        "pending_start": None
+    }
+    await update.effective_message.reply_text(
+        "📡 Tipo definido: Instalação.\n\n📌 Digite o número da O.S.:",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
 
-async def mudanca(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def iniciar_fluxo_mudanca(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
 
     if update.effective_user.id in usuarios:
         usuarios[update.effective_user.id]["pending_start"] = "mudanca"
-        await _solicitar_reinicio(update)
+        if getattr(update, "message", None):
+            await _solicitar_reinicio(update)
+        else:
+            await update.effective_message.reply_text("⚠️ Você já possui um relatório em andamento.\nUse /cancelar se quiser reiniciar.")
         return
 
-    usuarios[update.effective_user.id] = {"step": "os", "dados": {"tipo": "Mudança de endereço"}, "pending_start": None}
-    await update.message.reply_text("🏠 Tipo definido: Mudança de endereço.\n\n📌 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+    usuarios[update.effective_user.id] = {
+        "step": "os",
+        "dados": {"tipo": "Mudança de endereço"},
+        "pending_start": None
+    }
+    await update.effective_message.reply_text(
+        "🏠 Tipo definido: Mudança de endereço.\n\n📌 Digite o número da O.S.:",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+
+async def assistencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await iniciar_fluxo_assistencia(update, context)
+
+
+async def instalacao(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await iniciar_fluxo_instalacao(update, context)
+
+
+async def mudanca(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await iniciar_fluxo_mudanca(update, context)
 
 
 async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     usuarios.pop(update.effective_user.id, None)
-    await update.message.reply_text("❌ Atendimento cancelado.", reply_markup=ReplyKeyboardRemove())
+    await update.effective_message.reply_text("❌ Atendimento cancelado.", reply_markup=ReplyKeyboardRemove())
 
 
 async def perguntar(message, estado: dict):
@@ -266,15 +323,21 @@ async def perguntar(message, estado: dict):
     elif step == "materiais_retirados":
         await message.reply_text("📤 Materiais retirados (se não houver, digite: -):", reply_markup=ReplyKeyboardRemove())
     elif step == "confirmar":
-        relatorio = montar_relatorio(dados)
-        await enviar_texto_longo(message, relatorio)
-        await message.reply_text("📨 O que deseja fazer?", reply_markup=build_inline_keyboard("confirmar", CONFIRMACAO_ENVIO_OPCOES))
+        await message.reply_text(
+            "📨 Revisão final do relatório\n\nEscolha uma opção:",
+            reply_markup=build_inline_keyboard("confirmar", CONFIRMACAO_ENVIO_OPCOES)
+        )
     elif step == "editar":
         await message.reply_text("✏️ Selecione a etapa que deseja editar:", reply_markup=build_inline_keyboard("editar_os", EDITAR_OS_OPCOES, per_row=1))
     elif step == "perguntar_retirada":
         await message.reply_text(
-            "📦 Foram informados materiais retirados.\nDeseja gerar também o relatório de retirada de equipamentos?",
+            "📦 Foram informados materiais retirados.\nDeseja gerar também o relatório de entrega no estoque?",
             reply_markup=build_inline_keyboard("gerar_retirada", GERAR_RETIRADA_OPCOES)
+        )
+    elif step == "remover_pendencia":
+        await message.reply_text(
+            "⚠️ Esta O.S. está em Pendências. Deseja remover da lista e continuar?",
+            reply_markup=build_inline_keyboard("remover_pendencia", REMOVER_PENDENCIA_OPCOES)
         )
 
 
@@ -313,11 +376,25 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
             else:
                 usuarios[user_id] = {"step": "os", "dados": {}, "pending_start": None}
-                await query.message.reply_text("👋 Vamos iniciar o relatório.\n\n📌 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+                await query.message.reply_text("🔧 Atendimento iniciado.\n\n📌 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
                 return
         else:
             await query.message.reply_text("👍 Fluxo atual mantido.")
             return
+
+    if step == "remover_pendencia" and field == "remover_pendencia":
+        os_pendente = estado.get("os_pendente")
+        if code == "sim" and os_pendente:
+            remover_pendencia(os_pendente)
+
+        if not dados.get("tipo"):
+            estado["step"] = "tipo"
+        else:
+            estado["step"] = "inicio"
+
+        await query.message.reply_text("✅ Pendência tratada. Continuando o atendimento...", reply_markup=ReplyKeyboardRemove())
+        await perguntar(query.message, estado)
+        return
 
     if step == "tipo" and field == "tipo":
         dados["tipo"] = TIPOS_MAP.get(code, code)
@@ -400,14 +477,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if code == "enviar":
             relatorio = montar_relatorio(dados)
             await enviar_grupo_longo(context, relatorio, query.from_user)
-            salvar_historico(dados, relatorio, "O.S.")
+            salvar_historico(dados, relatorio, "Atendimento")
             materiais_retirados = (dados.get("materiais_retirados") or "-").strip()
             if materiais_retirados != "-":
                 estado["step"] = "perguntar_retirada"
-                await query.message.reply_text("✅ Relatório O.S. enviado com sucesso.")
+                await query.message.reply_text("✅ Relatório de atendimento enviado com sucesso.")
                 await perguntar(query.message, estado)
                 return
-            await query.message.reply_text("✅ Relatório O.S. enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
+            await query.message.reply_text("✅ Relatório de atendimento enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
             usuarios.pop(user_id, None)
             return
         elif code == "editar":
@@ -430,7 +507,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if code == "sim":
             iniciar_fluxo_retirada_prefill(user_id, os_numero)
             await query.message.reply_text(
-                f"📦 Iniciando relatório de retirada para a O.S. {os_numero}.\n\n🔄 Selecione o tipo de retirada:",
+                f"🏢 Iniciando relatório de entrega no estoque para a O.S. {os_numero}.\n\n🔄 Selecione o tipo de retirada:",
                 reply_markup=build_inline_keyboard("tipo_retirada", [
                     ("troca", "Troca"),
                     ("cancelamento", "Cancelamento"),
@@ -468,11 +545,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not validar_os(texto):
             await update.message.reply_text("⚠️ Número de O.S. inválido. Digite apenas números.")
             return
+
         dados["os"] = texto
+
+        pendencia = obter_pendencia(texto)
+        if pendencia:
+            estado["os_pendente"] = texto
+            estado["step"] = "remover_pendencia"
+            await update.message.reply_text(
+                f"⚠️ Esta O.S. está em Pendências.\n\nMotivo: {pendencia.get('motivo', '-')}\n\nDeseja remover da lista e continuar?",
+                reply_markup=build_inline_keyboard("remover_pendencia", REMOVER_PENDENCIA_OPCOES)
+            )
+            return
+
         if not dados.get("tipo"):
             estado["step"] = "tipo"
         else:
             estado["step"] = "inicio"
+
     elif step == "inicio":
         if not validar_hora(texto):
             await update.message.reply_text("⚠️ Hora inválida. Use o formato HH:MM. Ex: 16:04")
@@ -484,22 +574,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             estado["step"] = "tec_int"
         else:
             estado["step"] = "tec_ext"
+
     elif step == "solucao":
         await update.message.reply_text("🧠 Padronizando texto...", reply_markup=ReplyKeyboardRemove())
         dados["solucao"] = processar_texto(texto or "-", "solucao")
         estado["step"] = "observacoes"
+
     elif step == "observacoes":
         dados["observacoes"] = processar_texto(texto or "-", "observacao") if (texto or "-").strip() != "-" else "-"
         estado["step"] = "cabo"
+
     elif step == "cabo":
         dados["cabo"] = texto or "-"
         estado["step"] = "wifi"
+
     elif step == "wifi":
         dados["wifi"] = texto or "-"
         estado["step"] = "local"
+
     elif step == "local":
         dados["local"] = texto or "-"
         estado["step"] = "segundo_ponto"
+
     elif step == "sinal_fibra":
         valor = normalizar_sinal(texto)
         if valor is None:
@@ -507,6 +603,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         dados["sinal_fibra"] = valor
         estado["step"] = "sinal_cto"
+
     elif step == "sinal_cto":
         valor = normalizar_sinal(texto)
         if valor is None:
@@ -514,30 +611,38 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         dados["sinal_cto"] = valor
         estado["step"] = "danos"
+
     elif step == "danos_descricao":
         descricao = processar_texto(texto or "-", "danos")
         if dados.get("supervisor_ciente") == "Não":
             descricao = f"Supervisor não ciente do ocorrido. {descricao}"
         dados["danos_descricao"] = descricao
         estado["step"] = "orientacao"
+
     elif step == "fixacao":
         dados["fixacao"] = texto or "-"
         estado["step"] = "config_padrao"
+
     elif step == "pos_venda":
         dados["pos_venda"] = texto or "-"
         estado["step"] = "energia"
+
     elif step == "energia_outro":
         dados["energia"] = texto or "-"
         estado["step"] = "organizacao"
+
     elif step == "assinatura_motivo":
         dados["assinatura_motivo"] = processar_texto(texto or "-", "assinatura")
         estado["step"] = "materiais_utilizados"
+
     elif step == "materiais_utilizados":
         dados["materiais_utilizados"] = texto or "-"
         estado["step"] = "materiais_retirados"
+
     elif step == "materiais_retirados":
         dados["materiais_retirados"] = texto or "-"
         estado["step"] = "confirmar"
+
     else:
         return
 

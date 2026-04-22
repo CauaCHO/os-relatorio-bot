@@ -24,6 +24,7 @@ from shared.keyboards import (
     CIDADE_OPCOES,
     CIDADE_MAP,
 )
+
 from modules.material_delivery.report import montar_relatorio_material
 
 usuarios_material = {}
@@ -55,12 +56,6 @@ EDITAR_MATERIAL_OPCOES = [
     ("recebido", "Recebido por"),
     ("cidade", "Cidade"),
 ]
-
-
-async def enviar_texto_longo(message, texto: str):
-    partes = [texto[i:i + 4000] for i in range(0, len(texto), 4000)]
-    for parte in partes:
-        await message.reply_text(parte, parse_mode="HTML")
 
 
 def montar_cabecalho_grupo(user) -> str:
@@ -99,8 +94,8 @@ async def retirada(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.effective_user.id in usuarios_material:
         usuarios_material[update.effective_user.id]["pending_start"] = "retirada"
-        await update.message.reply_text(
-            "⚠️ Você já possui um relatório de retirada em andamento.\n\nDeseja cancelar o fluxo atual e iniciar um novo?",
+        await update.effective_message.reply_text(
+            "⚠️ Você já possui um relatório de estoque em andamento.\n\nDeseja cancelar o fluxo atual e iniciar um novo?",
             reply_markup=build_inline_keyboard("reiniciar_material", REINICIAR_FLUXO_OPCOES)
         )
         return
@@ -117,46 +112,49 @@ async def retirada(update: Update, context: ContextTypes.DEFAULT_TYPE):
         },
         "pending_start": None,
     }
-    await update.message.reply_text(
-        "📦 Vamos iniciar o relatório de retirada de equipamentos.\n\n📌 Digite o número da O.S.:",
+    await update.effective_message.reply_text(
+        "🏢 Vamos iniciar o relatório de Entrega no Estoque.\n\n📌 Digite o número da O.S.:",
         reply_markup=ReplyKeyboardRemove()
     )
 
 
+async def estoque(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await retirada(update, context)
+
+
 async def cancelar_material(update: Update, context: ContextTypes.DEFAULT_TYPE):
     usuarios_material.pop(update.effective_user.id, None)
-    await update.message.reply_text("❌ Relatório de retirada cancelado.", reply_markup=ReplyKeyboardRemove())
+    await update.effective_message.reply_text("❌ Relatório de estoque cancelado.", reply_markup=ReplyKeyboardRemove())
 
 
 async def status_material(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fluxo_ativo = update.effective_user.id in usuarios_material
     step = usuarios_material.get(update.effective_user.id, {}).get("step")
-    await update.message.reply_text(
-        status_texto(fluxo_ativo, step, False, "Módulo de Retirada de Equipamentos"),
+    await update.effective_message.reply_text(
+        status_texto(fluxo_ativo, step, False, "Módulo Estoque"),
         parse_mode="HTML"
     )
 
 
 async def perguntar(message, estado: dict):
     step = estado["step"]
-    dados = estado["dados"]
 
     if step == "tipo_retirada":
         await message.reply_text("🔄 Selecione o tipo de retirada:", reply_markup=build_inline_keyboard("tipo_retirada", TIPO_RETIRADA_OPCOES))
     elif step == "tem_roteador":
-        await message.reply_text("📡 Há roteador retirado?", reply_markup=build_inline_keyboard("tem_roteador", SIM_NAO_OPCOES))
+        await message.reply_text("📡 Há roteador entregue ao estoque?", reply_markup=build_inline_keyboard("tem_roteador", SIM_NAO_OPCOES))
     elif step == "roteador":
         await message.reply_text("📡 Selecione o modelo do roteador:", reply_markup=build_inline_keyboard("roteador", ROTEADORES_OPCOES))
     elif step == "tem_onu":
-        await message.reply_text("📶 Há ONU retirada?", reply_markup=build_inline_keyboard("tem_onu", SIM_NAO_OPCOES))
+        await message.reply_text("📶 Há ONU entregue ao estoque?", reply_markup=build_inline_keyboard("tem_onu", SIM_NAO_OPCOES))
     elif step == "onu":
         await message.reply_text("📶 Selecione o modelo da ONU:", reply_markup=build_inline_keyboard("onu", ONU_OPCOES))
     elif step == "patchcord":
         await message.reply_text("🔗 Possui PatchCord?", reply_markup=build_inline_keyboard("patchcord", SIM_NAO_OPCOES))
     elif step == "outro_tem":
-        await message.reply_text("➕ Há outro equipamento retirado?", reply_markup=build_inline_keyboard("outro_tem", SIM_NAO_OPCOES))
+        await message.reply_text("➕ Há outro equipamento entregue?", reply_markup=build_inline_keyboard("outro_tem", SIM_NAO_OPCOES))
     elif step == "outro_descricao":
-        await message.reply_text("✍️ Descreva o outro equipamento retirado:", reply_markup=ReplyKeyboardRemove())
+        await message.reply_text("✍️ Descreva o outro equipamento:", reply_markup=ReplyKeyboardRemove())
     elif step == "destino":
         await message.reply_text("📦 Selecione o destino:", reply_markup=build_inline_keyboard("destino", DESTINO_OPCOES))
     elif step == "recebido_por":
@@ -164,9 +162,10 @@ async def perguntar(message, estado: dict):
     elif step == "cidade":
         await message.reply_text("🌍 Selecione a cidade:", reply_markup=build_inline_keyboard("cidade", CIDADE_OPCOES))
     elif step == "confirmar":
-        relatorio = montar_relatorio_material(dados)
-        await enviar_texto_longo(message, relatorio)
-        await message.reply_text("📨 O que deseja fazer?", reply_markup=build_inline_keyboard("confirmar_material", CONFIRMACAO_ENVIO_OPCOES))
+        await message.reply_text(
+            "📨 Revisão final do relatório de estoque\n\nEscolha uma opção:",
+            reply_markup=build_inline_keyboard("confirmar_material", CONFIRMACAO_ENVIO_OPCOES)
+        )
     elif step == "editar":
         await message.reply_text("✏️ Selecione a etapa que deseja editar:", reply_markup=build_inline_keyboard("editar_material", EDITAR_MATERIAL_OPCOES, per_row=1))
 
@@ -202,7 +201,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 },
                 "pending_start": None,
             }
-            await query.message.reply_text("📦 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+            await query.message.reply_text("🏢 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
             return
         else:
             await query.message.reply_text("👍 Fluxo atual mantido.")
@@ -273,8 +272,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if code == "enviar":
             relatorio = montar_relatorio_material(dados)
             await enviar_grupo_longo(context, relatorio, query.from_user)
-            salvar_historico({"os": dados.get("os"), "tipo": "Retirada de Equipamentos"}, relatorio, "Retirada")
-            await query.message.reply_text("✅ Relatório de retirada enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
+            salvar_historico({"os": dados.get("os"), "tipo": "Entrega no Estoque"}, relatorio, "Estoque")
+            await query.message.reply_text("✅ Relatório de estoque enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
             usuarios_material.pop(user_id, None)
             return
         elif code == "editar":
