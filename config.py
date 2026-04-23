@@ -9,4 +9,4 @@ ARQUIVO_PENDENCIAS = "data/os_paralisadas.json"
 ARQUIVO_APP_CONFIG = "data/app_config.json"
 
 CONFIG_ALLOWED_USERS = ["GenericCHO", "EstoqueFlashNetFND"]
-CONFIG_PASSWORD = os.getenv("CONFIG_PASSWORD", "xxxxx")
+CONFIG_PASSWORD = os.getenv("CONFIG_PASSWORD")
