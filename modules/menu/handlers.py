@@ -1,14 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from shared.keyboards import menu_principal, menu_atendimento
-
-from modules.os_report.handlers import (
-    iniciar_fluxo_assistencia,
-    iniciar_fluxo_instalacao,
-    iniciar_fluxo_mudanca,
-)
-
+from shared.keyboards import menu_principal, menu_atendimento_v5
+from modules.os_report.handlers import iniciar_fluxo_tipo_v5, ajuda
 from modules.material_delivery.handlers import estoque
 from modules.absent_client.handlers import ausencia, paralisada, pendencias
 
@@ -17,9 +11,9 @@ async def start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
 
-    await update.message.reply_text(
-        "🚀 <b>Sistema Flash Reports</b>\n\n"
-        "Selecione o relatório:",
+    await update.effective_message.reply_text(
+        "🚀 <b>Sistema Flash Reports v5</b>\n\n"
+        "Selecione o módulo:",
         parse_mode="HTML",
         reply_markup=menu_principal()
     )
@@ -27,46 +21,44 @@ async def start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    if not query or query.message.chat.type != "private":
+        return
+
     await query.answer()
 
     try:
         campo, valor = query.data.split("|", 1)
-    except:
+    except Exception:
         return
 
     if campo == "menu":
-
         if valor == "atendimento":
             await query.message.reply_text(
                 "🔧 <b>Atendimento</b>\n\nEscolha o tipo:",
                 parse_mode="HTML",
-                reply_markup=menu_atendimento()
+                reply_markup=menu_atendimento_v5()
             )
+            return
 
-        elif valor == "retirada":
-            await query.message.reply_text(
-                "📦 Fluxo Retirada será separado do Estoque.\nEm implantação."
-            )
-
-        elif valor == "estoque":
+        if valor == "estoque":
             await estoque(update, context)
+            return
 
-        elif valor == "ausente":
+        if valor == "ausente":
             await ausencia(update, context)
+            return
 
-        elif valor == "paralisada":
+        if valor == "paralisada":
             await paralisada(update, context)
+            return
 
-        elif valor == "pendencias":
+        if valor == "pendencias":
             await pendencias(update, context)
+            return
 
-    elif campo == "menu_atendimento":
+        if valor == "sistema":
+            await ajuda(update, context)
+            return
 
-        if valor == "assistencia":
-            await iniciar_fluxo_assistencia(update, context)
-
-        elif valor == "instalacao":
-            await iniciar_fluxo_instalacao(update, context)
-
-        elif valor == "mudanca":
-            await iniciar_fluxo_mudanca(update, context)
+    if campo == "menu_atendimento_v5":
+        await iniciar_fluxo_tipo_v5(update, context, valor)
