@@ -148,6 +148,49 @@ CANAIS_5_OPCOES = [
     ("161", "Canal 161"),
 ]
 
+ROTEADOR_SUGESTOES_OPCOES = [
+    ("zte_h3601pe", "ZTE H3601PE"),
+    ("zte_h199a", "ZTE H199A"),
+    ("mercusys_ac12g", "Mercusys AC12G"),
+    ("mercusys_mr80x", "Mercusys MR80X"),
+    ("tplink_c20", "TP-Link C20"),
+    ("tplink_c5", "TP-Link C5"),
+    ("tplink_c6", "TP-Link C6"),
+    ("outro", "Outros"),
+]
+ROTEADOR_SUGESTOES_MAP = {
+    "zte_h3601pe": "ZTE H3601PE",
+    "zte_h199a": "ZTE H199A",
+    "mercusys_ac12g": "Mercusys AC12G",
+    "mercusys_mr80x": "Mercusys MR80X",
+    "tplink_c20": "TP-Link C20",
+    "tplink_c5": "TP-Link C5",
+    "tplink_c6": "TP-Link C6",
+    "outro": "Outros",
+}
+
+LOCAL_INSTALACAO_OPCOES = [
+    ("sala", "Sala"),
+    ("cozinha", "Cozinha"),
+    ("quarto", "Quarto"),
+    ("outro", "Outros"),
+]
+LOCAL_INSTALACAO_MAP = {
+    "sala": "Sala",
+    "cozinha": "Cozinha",
+    "quarto": "Quarto",
+    "outro": "Outros",
+}
+
+TESTE_STATUS_OPCOES = [
+    ("sim", "Sim"),
+    ("nao", "Não"),
+]
+TESTE_STATUS_MAP = {
+    "sim": "Sim",
+    "nao": "Não",
+}
+
 # =========================
 # ESTOQUE
 # =========================

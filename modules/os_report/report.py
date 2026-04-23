@@ -1,5 +1,5 @@
-from modules.os_report.modelos import MODELOS_ATENDIMENTO
 import re
+from modules.os_report.modelos import MODELOS_ATENDIMENTO
 
 
 def _campo_deve_aparecer(campo: dict, dados: dict) -> bool:
@@ -17,25 +17,13 @@ def _normalizar_vazio(valor) -> str:
 
 
 def _formatar_materiais(valor: str) -> str:
-    """
-    Tenta quebrar materiais em linhas quando encontrar padrão:
-    número + descrição
-    Ex:
-    '1 roteador 2 conector apc 8 abraçadeira'
-    =>
-    1 roteador
-    2 conector apc
-    8 abraçadeira
-    """
     valor = _normalizar_vazio(valor)
 
     if valor == "-":
         return valor
 
-    # limpa espaços duplicados
     valor = re.sub(r"\s+", " ", valor).strip()
 
-    # encontra blocos começando por número
     matches = list(re.finditer(r"(\d+)\s+([^0-9]+?)(?=(\s+\d+\s+)|$)", valor))
 
     if matches:
@@ -51,17 +39,39 @@ def _formatar_materiais(valor: str) -> str:
     return valor
 
 
+def _formatar_speed(valor: str) -> str:
+    valor = _normalizar_vazio(valor)
+    if valor == "-":
+        return valor
+
+    valor_limpo = valor.lower().replace("mbps", "").strip()
+    return f"{valor_limpo} Mbps"
+
+
+def _formatar_sinal(valor: str) -> str:
+    valor = _normalizar_vazio(valor)
+    if valor == "-":
+        return valor
+
+    valor_limpo = valor.lower().replace("dbm", "").replace("dBm", "").strip()
+
+    if not valor_limpo.startswith("-"):
+        valor_limpo = f"-{valor_limpo}"
+
+    return f"{valor_limpo} dBm"
+
+
 def _formatar_valor(campo_id: str, valor) -> str:
     valor = _normalizar_vazio(valor)
 
-    if campo_id in {"materiais_utilizados", "material_linkado"}:
-        return valor
-
-    if campo_id in {"materiais_retirados"}:
+    if campo_id in {"materiais_utilizados", "materiais_retirados"}:
         return _formatar_materiais(valor)
 
-    if campo_id in {"materiais_utilizados"}:
-        return _formatar_materiais(valor)
+    if campo_id in {"teste_velocidade"}:
+        return _formatar_speed(valor)
+
+    if campo_id in {"sinal_fibra", "sinal_cto"}:
+        return _formatar_sinal(valor)
 
     return valor
 
@@ -95,7 +105,6 @@ def montar_relatorio(dados: dict) -> str:
 
             valor = _formatar_valor(campo["id"], dados.get(campo["id"], "-"))
 
-            # resposta sempre embaixo da pergunta
             linhas.append(f"{campo['item']} - {campo['titulo']}:")
             linhas.append(f"{valor}")
             linhas.append("")

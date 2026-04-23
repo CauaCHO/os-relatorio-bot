@@ -29,6 +29,10 @@ from shared.keyboards import (
     GERAR_RETIRADA_OPCOES,
     REMOVER_PENDENCIA_OPCOES,
     ATENDIMENTO_V5_TIPOS_MAP,
+    ROTEADOR_SUGESTOES_OPCOES,
+    ROTEADOR_SUGESTOES_MAP,
+    LOCAL_INSTALACAO_OPCOES,
+    LOCAL_INSTALACAO_MAP,
 )
 from modules.os_report.modelos import MODELOS_ATENDIMENTO
 from modules.os_report.report import montar_relatorio
@@ -66,12 +70,9 @@ def _campo_deve_aparecer(campo: dict, dados: dict) -> bool:
     return dados.get(cond["campo"]) == cond["valor"]
 
 
-def _rotulo_campo(campo: dict) -> str:
-    return f"{campo['item']} {campo['titulo'][:40]}"
-
-
 def _mapa_opcoes(campo: dict):
     tipo = campo["tipo"]
+
     if tipo == "sim_nao":
         return SIM_NAO_OPCOES, SIM_NAO_MAP
     if tipo == "tecnico":
@@ -84,12 +85,12 @@ def _mapa_opcoes(campo: dict):
         return CANAIS_24_OPCOES, None
     if tipo == "canal5":
         return CANAIS_5_OPCOES, None
+    if tipo == "roteador_sugestao":
+        return ROTEADOR_SUGESTOES_OPCOES, ROTEADOR_SUGESTOES_MAP
+    if tipo == "local_sugestao":
+        return LOCAL_INSTALACAO_OPCOES, LOCAL_INSTALACAO_MAP
+
     return None, None
-
-
-def _campos_editaveis(tipo_v5: str, dados: dict):
-    campos = _todos_campos_modelo(tipo_v5)
-    return [c for c in campos if _campo_deve_aparecer(c, dados)]
 
 
 def _pre_campos():
@@ -186,7 +187,18 @@ def _pergunta_campo(campo: dict) -> str:
         "equipamentos_atualizados": "🔄 Os equipamentos estão atualizados?",
         "config_padrao": "⚙️ Ficou dentro do padrão da empresa?",
         "acesso_remoto": "🧩 O acesso remoto foi verificado?",
-        "passagem_cabo": "🔌 Foi feita passagem de cabo com testes?",
+        "teste_realizado": "🚀 Foi realizado teste de velocidade?",
+        "verificou_melhor_canal": "📶 Foi verificado o melhor canal da rede Wi-Fi?",
+        "pos_venda": "🤝 Foi realizado o pós-venda imediato?",
+        "motivo_sem_pos_venda": "✍️ Informe o motivo de não ter sido realizado o pós-venda:",
+        "passagem_cabo": "🔌 Houve passagem de cabo com testes?",
+        "modelo_segundo_roteador": "📡 Selecione o modelo do roteador do segundo ponto:",
+        "ssid_segundo_roteador": "📶 Informe o SSID do segundo ponto:",
+        "senha_segundo_roteador": "🔒 Informe a senha do segundo ponto:",
+        "local_instalacao": "📍 Selecione o local da instalação:",
+        "teste_velocidade": "🚀 Informe o valor do speedtest:",
+        "materiais_utilizados": "📦 Informe o material utilizado:",
+        "materiais_retirados": "📤 Informe o material retirado:",
     }
     return custom.get(campo["id"], f"✍️ {campo.get('titulo', 'Informe o campo')}:")
 
@@ -203,8 +215,21 @@ async def perguntar(message, estado: dict):
         return
 
     if estado["step"] == "confirmar":
+        relatorio_preview = montar_relatorio(dados)
+        resumo = [
+            "📋 <b>Resumo antes do envio</b>",
+            "",
+            f"<b>O.S.:</b> {dados.get('os', '-')}",
+            f"<b>Tipo:</b> {dados.get('tipo_v5', '-')}",
+            f"<b>Hora:</b> {dados.get('inicio', '-')}",
+            f"<b>Técnico externo:</b> {dados.get('tec_ext', '-')}",
+            f"<b>Técnico interno:</b> {dados.get('tec_int', '-')}",
+            "",
+            "📨 Escolha uma opção:",
+        ]
+        await message.reply_text("\n".join(resumo), parse_mode="HTML")
         await message.reply_text(
-            "📨 Revisão final do relatório\n\nEscolha uma opção:",
+            "✅ Enviar\n✏️ Editar etapa específica\n❌ Cancelar",
             reply_markup=build_inline_keyboard("confirmar", CONFIRMACAO_ENVIO_OPCOES)
         )
         return
@@ -212,8 +237,6 @@ async def perguntar(message, estado: dict):
     if estado["step"] == "editar":
         opcoes = []
         for campo in _todos_campos_fluxo(tipo_v5, dados):
-            if campo["id"] == "os_pendente":
-                continue
             titulo = campo.get("titulo", campo["id"])
             opcoes.append((campo["id"], titulo[:55]))
         await message.reply_text(
@@ -267,6 +290,7 @@ def _proximo_campo(estado: dict):
 
 def _salvar_valor_campo(estado: dict, campo: dict, valor_bruto: str, valor_convertido: str | None = None):
     valor = valor_convertido if valor_convertido is not None else valor_bruto
+
     if campo["tipo"] == "texto":
         estado["dados"][campo["id"]] = processar_texto(valor or "-", "observacao")
     else:
@@ -318,15 +342,28 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await enviar_grupo_longo(context, relatorio, query.from_user)
             salvar_historico(dados, relatorio, "Atendimento")
 
-            materiais = (dados.get("materiais_utilizados") or "-").strip()
-            if materiais != "-":
+            materiais_utilizados = (dados.get("materiais_utilizados") or "-").strip()
+            materiais_retirados = (dados.get("materiais_retirados") or "-").strip()
+
+            if materiais_utilizados != "-" or materiais_retirados != "-":
                 estado["step"] = "perguntar_retirada"
-                await query.message.reply_text("✅ Relatório enviado com sucesso.")
+                await query.message.reply_text(
+                    "✅ Relatório enviado com sucesso.\n\n"
+                    f"📋 O.S.: {dados.get('os', '-')}\n"
+                    f"🔧 Tipo: {dados.get('tipo_v5', '-')}\n"
+                    f"👤 Técnico: {dados.get('tec_ext', '-')}"
+                )
                 await perguntar(query.message, estado)
                 return
 
             usuarios.pop(user_id, None)
-            await query.message.reply_text("✅ Relatório enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
+            await query.message.reply_text(
+                "✅ Relatório enviado com sucesso.\n\n"
+                f"📋 O.S.: {dados.get('os', '-')}\n"
+                f"🔧 Tipo: {dados.get('tipo_v5', '-')}\n"
+                f"👤 Técnico: {dados.get('tec_ext', '-')}",
+                reply_markup=ReplyKeyboardRemove()
+            )
             return
 
         if code == "editar":
@@ -371,6 +408,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             valor = PROBLEMAS_MAP.get(code, code)
         elif campo["tipo"] == "energia":
             valor = ENERGIA_MAP.get(code, code)
+        elif campo["tipo"] == "roteador_sugestao":
+            if code == "outro":
+                estado["dados"][campo["id"]] = "Outros"
+                estado["campo_atual"] = campo["id"]
+                estado["step"] = "campo_outro_roteador"
+                await query.message.reply_text("✍️ Informe manualmente o modelo do roteador:")
+                return
+            valor = ROTEADOR_SUGESTOES_MAP.get(code, code)
+        elif campo["tipo"] == "local_sugestao":
+            if code == "outro":
+                estado["dados"][campo["id"]] = "Outros"
+                estado["campo_atual"] = campo["id"]
+                estado["step"] = "campo_outro_local"
+                await query.message.reply_text("✍️ Informe manualmente o local da instalação:")
+                return
+            valor = LOCAL_INSTALACAO_MAP.get(code, code)
         else:
             valor = mapa.get(code, code) if mapa else code
 
@@ -400,6 +453,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     estado = usuarios[user_id]
     dados = estado["dados"]
     tipo_v5 = dados["tipo_v5"]
+
+    if estado["step"] == "campo_outro_roteador":
+        campo = next(c for c in _todos_campos_fluxo(tipo_v5, dados) if c["id"] == estado["campo_atual"])
+        _salvar_valor_campo(estado, campo, update.message.text.strip())
+        estado["step"] = "campo"
+        _proximo_campo(estado)
+        await perguntar(update.message, estado)
+        return
+
+    if estado["step"] == "campo_outro_local":
+        campo = next(c for c in _todos_campos_fluxo(tipo_v5, dados) if c["id"] == estado["campo_atual"])
+        _salvar_valor_campo(estado, campo, update.message.text.strip())
+        estado["step"] = "campo"
+        _proximo_campo(estado)
+        await perguntar(update.message, estado)
+        return
 
     if estado["step"] != "campo":
         return
@@ -447,6 +516,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("⚠️ Digite um valor válido. Exemplo: 17.22 ou apenas -")
             return
         _salvar_valor_campo(estado, campo, texto, valor)
+        _proximo_campo(estado)
+        await perguntar(update.message, estado)
+        return
+
+    if campo["tipo"] == "speed":
+        texto_limpo = texto.lower().replace("mbps", "").strip()
+        try:
+            float(texto_limpo.replace(",", "."))
+        except ValueError:
+            await update.message.reply_text("⚠️ Digite apenas o valor do speedtest. Exemplo: 250")
+            return
+        _salvar_valor_campo(estado, campo, texto, texto_limpo)
         _proximo_campo(estado)
         await perguntar(update.message, estado)
         return
