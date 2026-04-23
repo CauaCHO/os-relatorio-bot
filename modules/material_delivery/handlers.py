@@ -21,8 +21,6 @@ from shared.keyboards import (
     DESTINO_MAP,
     RECEBIDO_POR_OPCOES,
     RECEBIDO_POR_MAP,
-    CIDADE_OPCOES,
-    CIDADE_MAP,
 )
 
 from modules.material_delivery.report import montar_relatorio_material
@@ -40,7 +38,6 @@ EDIT_MAP_MATERIAL = {
     "outro": "outro_tem",
     "destino": "destino",
     "recebido": "recebido_por",
-    "cidade": "cidade",
 }
 
 EDITAR_MATERIAL_OPCOES = [
@@ -54,7 +51,6 @@ EDITAR_MATERIAL_OPCOES = [
     ("outro", "Outro equipamento"),
     ("destino", "Destino"),
     ("recebido", "Recebido por"),
-    ("cidade", "Cidade"),
 ]
 
 
@@ -72,6 +68,32 @@ async def enviar_grupo_longo(context: ContextTypes.DEFAULT_TYPE, texto: str, use
         await context.bot.send_message(chat_id=CHAT_ID, text=parte, parse_mode="HTML")
 
 
+def aplicar_destino_automatico(dados: dict, destino_codigo: str):
+    """
+    Regras:
+    - Estoque FND  -> Cidade Fernandópolis / Recebido por Cauã
+    - Estoque SJRP -> Cidade São José do Rio Preto / Recebido por Kesli
+    - Estoque VT   -> Cidade Votuporanga / perguntar quem recebeu
+    """
+    dados["destino"] = DESTINO_MAP.get(destino_codigo, destino_codigo)
+
+    if destino_codigo == "estoque_fnd":
+        dados["cidade"] = "Fernandópolis"
+        dados["recebido_por"] = "Cauã"
+
+    elif destino_codigo == "estoque_sjrp":
+        dados["cidade"] = "São José do Rio Preto"
+        dados["recebido_por"] = "Kesli"
+
+    elif destino_codigo == "estoque_vt":
+        dados["cidade"] = "Votuporanga"
+        dados["recebido_por"] = "-"
+
+    else:
+        dados["cidade"] = "-"
+        dados["recebido_por"] = "-"
+
+
 def iniciar_fluxo_retirada_prefill(user_id: int, os_numero: str):
     usuarios_material[user_id] = {
         "step": "tipo_retirada",
@@ -83,6 +105,9 @@ def iniciar_fluxo_retirada_prefill(user_id: int, os_numero: str):
             "onu": "-",
             "patchcord": "Não",
             "outro": "-",
+            "destino": "-",
+            "cidade": "-",
+            "recebido_por": "-",
         },
         "pending_start": None,
     }
@@ -109,9 +134,13 @@ async def retirada(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "onu": "-",
             "patchcord": "Não",
             "outro": "-",
+            "destino": "-",
+            "cidade": "-",
+            "recebido_por": "-",
         },
         "pending_start": None,
     }
+
     await update.effective_message.reply_text(
         "🏢 Vamos iniciar o relatório de Entrega no Estoque.\n\n📌 Digite o número da O.S.:",
         reply_markup=ReplyKeyboardRemove()
@@ -124,7 +153,10 @@ async def estoque(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cancelar_material(update: Update, context: ContextTypes.DEFAULT_TYPE):
     usuarios_material.pop(update.effective_user.id, None)
-    await update.effective_message.reply_text("❌ Relatório de estoque cancelado.", reply_markup=ReplyKeyboardRemove())
+    await update.effective_message.reply_text(
+        "❌ Relatório de estoque cancelado.",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
 
 async def status_material(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -140,40 +172,89 @@ async def perguntar(message, estado: dict):
     step = estado["step"]
 
     if step == "tipo_retirada":
-        await message.reply_text("🔄 Selecione o tipo de retirada:", reply_markup=build_inline_keyboard("tipo_retirada", TIPO_RETIRADA_OPCOES))
+        await message.reply_text(
+            "🔄 Selecione o tipo de retirada:",
+            reply_markup=build_inline_keyboard("tipo_retirada", TIPO_RETIRADA_OPCOES)
+        )
+
     elif step == "tem_roteador":
-        await message.reply_text("📡 Há roteador entregue ao estoque?", reply_markup=build_inline_keyboard("tem_roteador", SIM_NAO_OPCOES))
+        await message.reply_text(
+            "📡 Há roteador entregue ao estoque?",
+            reply_markup=build_inline_keyboard("tem_roteador", SIM_NAO_OPCOES)
+        )
+
     elif step == "roteador":
-        await message.reply_text("📡 Selecione o modelo do roteador:", reply_markup=build_inline_keyboard("roteador", ROTEADORES_OPCOES))
+        await message.reply_text(
+            "📡 Selecione o modelo do roteador:",
+            reply_markup=build_inline_keyboard("roteador", ROTEADORES_OPCOES)
+        )
+
     elif step == "tem_onu":
-        await message.reply_text("📶 Há ONU entregue ao estoque?", reply_markup=build_inline_keyboard("tem_onu", SIM_NAO_OPCOES))
+        await message.reply_text(
+            "📶 Há ONU entregue ao estoque?",
+            reply_markup=build_inline_keyboard("tem_onu", SIM_NAO_OPCOES)
+        )
+
     elif step == "onu":
-        await message.reply_text("📶 Selecione o modelo da ONU:", reply_markup=build_inline_keyboard("onu", ONU_OPCOES))
+        await message.reply_text(
+            "📶 Selecione o modelo da ONU:",
+            reply_markup=build_inline_keyboard("onu", ONU_OPCOES)
+        )
+
     elif step == "patchcord":
-        await message.reply_text("🔗 Possui PatchCord?", reply_markup=build_inline_keyboard("patchcord", SIM_NAO_OPCOES))
+        await message.reply_text(
+            "🔗 Possui PatchCord?",
+            reply_markup=build_inline_keyboard("patchcord", SIM_NAO_OPCOES)
+        )
+
     elif step == "outro_tem":
-        await message.reply_text("➕ Há outro equipamento entregue?", reply_markup=build_inline_keyboard("outro_tem", SIM_NAO_OPCOES))
+        await message.reply_text(
+            "➕ Há outro equipamento entregue?",
+            reply_markup=build_inline_keyboard("outro_tem", SIM_NAO_OPCOES)
+        )
+
     elif step == "outro_descricao":
-        await message.reply_text("✍️ Descreva o outro equipamento:", reply_markup=ReplyKeyboardRemove())
+        await message.reply_text(
+            "✍️ Descreva o outro equipamento:",
+            reply_markup=ReplyKeyboardRemove()
+        )
+
     elif step == "destino":
-        await message.reply_text("📦 Selecione o destino:", reply_markup=build_inline_keyboard("destino", DESTINO_OPCOES))
+        await message.reply_text(
+            "📦 Selecione o destino:",
+            reply_markup=build_inline_keyboard("destino", DESTINO_OPCOES)
+        )
+
     elif step == "recebido_por":
-        await message.reply_text("👤 Selecione quem recebeu:", reply_markup=build_inline_keyboard("recebido_por", RECEBIDO_POR_OPCOES))
-    elif step == "cidade":
-        await message.reply_text("🌍 Selecione a cidade:", reply_markup=build_inline_keyboard("cidade", CIDADE_OPCOES))
+        # Só deve ser perguntado para Votuporanga
+        opcoes_vt = [
+            ("giovani", "Giovani"),
+            ("dwedinei", "Dwedinei"),
+            ("leonardo", "Leonardo"),
+        ]
+        await message.reply_text(
+            "👤 Selecione quem recebeu em Votuporanga:",
+            reply_markup=build_inline_keyboard("recebido_por", opcoes_vt)
+        )
+
     elif step == "confirmar":
         await message.reply_text(
             "📨 Revisão final do relatório de estoque\n\nEscolha uma opção:",
             reply_markup=build_inline_keyboard("confirmar_material", CONFIRMACAO_ENVIO_OPCOES)
         )
+
     elif step == "editar":
-        await message.reply_text("✏️ Selecione a etapa que deseja editar:", reply_markup=build_inline_keyboard("editar_material", EDITAR_MATERIAL_OPCOES, per_row=1))
+        await message.reply_text(
+            "✏️ Selecione a etapa que deseja editar:",
+            reply_markup=build_inline_keyboard("editar_material", EDITAR_MATERIAL_OPCOES, per_row=1)
+        )
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if not query or query.message.chat.type != "private":
         return
+
     await query.answer()
 
     user_id = query.from_user.id
@@ -184,9 +265,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     step = estado["step"]
     dados = estado["dados"]
 
-    field, code = query.data.split("|", 1)
+    try:
+        field, code = query.data.split("|", 1)
+    except ValueError:
+        return
+
     valid = False
 
+    # =========================
+    # REINÍCIO
+    # =========================
     if field == "reiniciar_material":
         if code == "reiniciar_sim":
             usuarios_material[user_id] = {
@@ -198,15 +286,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "onu": "-",
                     "patchcord": "Não",
                     "outro": "-",
+                    "destino": "-",
+                    "cidade": "-",
+                    "recebido_por": "-",
                 },
                 "pending_start": None,
             }
-            await query.message.reply_text("🏢 Digite o número da O.S.:", reply_markup=ReplyKeyboardRemove())
+            await query.message.reply_text(
+                "🏢 Digite o número da O.S.:",
+                reply_markup=ReplyKeyboardRemove()
+            )
             return
         else:
             await query.message.reply_text("👍 Fluxo atual mantido.")
             return
 
+    # =========================
+    # FLUXO PRINCIPAL
+    # =========================
     if step == "tipo_retirada" and field == "tipo_retirada":
         dados["tipo_retirada"] = TIPO_RETIRADA_MAP.get(code, code)
         estado["step"] = "tem_roteador"
@@ -254,17 +351,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         valid = True
 
     elif step == "destino" and field == "destino":
-        dados["destino"] = DESTINO_MAP.get(code, code)
-        estado["step"] = "recebido_por"
+        aplicar_destino_automatico(dados, code)
+
+        # FND e SJRP já definem automaticamente cidade e recebido_por
+        if code in ("estoque_fnd", "estoque_sjrp"):
+            estado["step"] = "confirmar"
+        else:
+            # VT precisa escolher quem recebeu
+            estado["step"] = "recebido_por"
+
         valid = True
 
     elif step == "recebido_por" and field == "recebido_por":
         dados["recebido_por"] = RECEBIDO_POR_MAP.get(code, code)
-        estado["step"] = "cidade"
-        valid = True
-
-    elif step == "cidade" and field == "cidade":
-        dados["cidade"] = CIDADE_MAP.get(code, code)
         estado["step"] = "confirmar"
         valid = True
 
@@ -272,22 +371,39 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if code == "enviar":
             relatorio = montar_relatorio_material(dados)
             await enviar_grupo_longo(context, relatorio, query.from_user)
-            salvar_historico({"os": dados.get("os"), "tipo": "Entrega no Estoque"}, relatorio, "Estoque")
-            await query.message.reply_text("✅ Relatório de estoque enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
+            salvar_historico(
+                {"os": dados.get("os"), "tipo": "Entrega no Estoque"},
+                relatorio,
+                "Estoque"
+            )
+
+            await query.message.reply_text(
+                "✅ Relatório de estoque enviado com sucesso.\n\n"
+                f"📋 O.S.: {dados.get('os', '-')}\n"
+                f"🏢 Destino: {dados.get('destino', '-')}\n"
+                f"👤 Recebido por: {dados.get('recebido_por', '-')}",
+                reply_markup=ReplyKeyboardRemove()
+            )
             usuarios_material.pop(user_id, None)
             return
+
         elif code == "editar":
             estado["step"] = "editar"
             await perguntar(query.message, estado)
             return
+
         else:
             usuarios_material.pop(user_id, None)
-            await query.message.reply_text("❌ Fluxo cancelado.", reply_markup=ReplyKeyboardRemove())
+            await query.message.reply_text(
+                "❌ Fluxo cancelado.",
+                reply_markup=ReplyKeyboardRemove()
+            )
             return
 
     elif step == "editar" and field == "editar_material":
         novo_step = EDIT_MAP_MATERIAL.get(code)
         if novo_step:
+            # Se editar destino, a lógica automática será reaplicada ao selecionar novamente
             estado["step"] = novo_step
             await perguntar(query.message, estado)
             return
@@ -318,13 +434,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if step == "os":
         if not validar_os(texto):
-            await update.message.reply_text("⚠️ Número de O.S. inválido. Digite apenas números.")
+            await update.message.reply_text(
+                "⚠️ Número de O.S. inválido. Digite apenas números."
+            )
             return
+
         dados["os"] = texto
         estado["step"] = "tipo_retirada"
+
     elif step == "outro_descricao":
         dados["outro"] = texto or "-"
         estado["step"] = "destino"
+
     else:
         return
 
