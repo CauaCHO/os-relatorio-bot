@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 # =========================
-# OPÇÕES GERAIS
+# OPÇÕES FIXAS
 # =========================
 
 SIM_NAO_OPCOES = [
@@ -31,80 +31,20 @@ REMOVER_PENDENCIA_OPCOES = [
     ("nao", "❌ Não"),
 ]
 
-# =========================
-# MENU V5
-# =========================
-
-MENU_PRINCIPAL_OPCOES = [
-    ("atendimento", "🔧 Atendimento"),
-    ("estoque", "🏢 Estoque"),
-    ("ausente", "🚪 Ausente"),
-    ("paralisada", "⏸️ Paralisada"),
-    ("pendencias", "📋 Pendências"),
-    ("sistema", "⚙️ Sistema"),
-]
-
-MENU_ATENDIMENTO_V5_OPCOES = [
-    ("radio_assistencia", "📡 Assistência Rádio"),
-    ("radio_instalacao", "📡 Instalação Rádio"),
-    ("fibra_assistencia", "🌐 Fibra Assistência"),
-    ("fibra_instalacao", "🏠 Fibra Instalação / Mudança"),
-    ("segundo_ponto", "📶 Segundo Ponto / Troca Roteador"),
-    ("link_loss", "🚨 Link Loss / Sinal Irregular"),
-]
-
-ATENDIMENTO_V5_TIPOS_MAP = {
-    "radio_assistencia": "Assistência Rádio",
-    "radio_instalacao": "Instalação Rádio",
-    "fibra_assistencia": "Fibra Assistência",
-    "fibra_instalacao": "Fibra Instalação / Mudança",
-    "segundo_ponto": "Segundo Ponto / Troca Roteador",
-    "link_loss": "Link Loss / Sinal Irregular",
-}
-
-# =========================
-# ATENDIMENTO
-# =========================
-
-TECNICOS_OPCOES = [
-    ("caua", "Cauã Henrique"),
-    ("jamildo", "Jamildo Ferreira"),
-    ("erick", "Erick"),
-    ("valdisney", "Valdisney"),
-    ("wellington", "Wellington Arouca"),
-    ("wesley", "Wesley Texeira"),
-]
-TECNICOS_MAP = dict(TECNICOS_OPCOES)
-
-PROBLEMAS_OPCOES = [
-    ("link_loss", "Link Loss"),
-    ("mudanca_plano", "Mudança de plano"),
-    ("mudanca_comodo", "Mudança de cômodo"),
-    ("segundo_ponto", "Segundo ponto"),
-    ("instabilidade", "Instabilidade"),
-]
-PROBLEMAS_MAP = {
-    "link_loss": "Link Loss",
-    "mudanca_plano": "Mudança de plano",
-    "mudanca_comodo": "Mudança de cômodo",
-    "segundo_ponto": "Segundo ponto",
-    "instabilidade": "Instabilidade",
-}
-
 ENERGIA_OPCOES = [
     ("adaptador_t", "Adaptador T"),
     ("filtro", "Filtro de linha"),
-    ("tomada_individual", "Tomada Individual"),
+    ("tomada_individual", "Tomada individual"),
     ("tomada_dupla", "Tomada dupla"),
-    ("tomada_tripla", "Tomada Tripla"),
+    ("tomada_tripla", "Tomada tripla"),
     ("outro", "Outro"),
 ]
 ENERGIA_MAP = {
     "adaptador_t": "Adaptador T",
     "filtro": "Filtro de linha",
-    "tomada_individual": "Tomada Individual",
+    "tomada_individual": "Tomada individual",
     "tomada_dupla": "Tomada dupla",
-    "tomada_tripla": "Tomada Tripla",
+    "tomada_tripla": "Tomada tripla",
     "outro": "Outro",
 }
 
@@ -148,77 +88,38 @@ CANAIS_5_OPCOES = [
     ("161", "Canal 161"),
 ]
 
-ROTEADOR_SUGESTOES_OPCOES = [
-    ("zte_h3601pe", "ZTE H3601PE"),
-    ("zte_h199a", "ZTE H199A"),
-    ("mercusys_ac12g", "Mercusys AC12G"),
-    ("mercusys_mr80x", "Mercusys MR80X"),
-    ("tplink_c20", "TP-Link C20"),
-    ("tplink_c5", "TP-Link C5"),
-    ("tplink_c6", "TP-Link C6"),
-    ("outro", "Outros"),
+MENU_PRINCIPAL_OPCOES = [
+    ("atendimento", "🔧 Atendimento"),
+    ("estoque", "🏢 Estoque"),
+    ("ausente", "🚪 Ausente"),
+    ("paralisada", "⏸️ Paralisada"),
+    ("pendencias", "📋 Pendências"),
+    ("sistema", "⚙️ Sistema"),
 ]
-ROTEADOR_SUGESTOES_MAP = {
-    "zte_h3601pe": "ZTE H3601PE",
-    "zte_h199a": "ZTE H199A",
-    "mercusys_ac12g": "Mercusys AC12G",
-    "mercusys_mr80x": "Mercusys MR80X",
-    "tplink_c20": "TP-Link C20",
-    "tplink_c5": "TP-Link C5",
-    "tplink_c6": "TP-Link C6",
-    "outro": "Outros",
-}
 
-LOCAL_INSTALACAO_OPCOES = [
-    ("sala", "Sala"),
-    ("cozinha", "Cozinha"),
-    ("quarto", "Quarto"),
-    ("outro", "Outros"),
+MENU_ATENDIMENTO_V5_OPCOES = [
+    ("radio_assistencia", "📡 Assistência Rádio"),
+    ("radio_instalacao", "📡 Instalação Rádio"),
+    ("fibra_assistencia", "🌐 Fibra Assistência"),
+    ("fibra_instalacao", "🏠 Fibra Instalação / Mudança"),
+    ("segundo_ponto", "📶 Segundo Ponto / Troca Roteador"),
+    ("link_loss", "🚨 Link Loss / Sinal Irregular"),
 ]
-LOCAL_INSTALACAO_MAP = {
-    "sala": "Sala",
-    "cozinha": "Cozinha",
-    "quarto": "Quarto",
-    "outro": "Outros",
-}
 
-TESTE_STATUS_OPCOES = [
-    ("sim", "Sim"),
-    ("nao", "Não"),
-]
-TESTE_STATUS_MAP = {
-    "sim": "Sim",
-    "nao": "Não",
+ATENDIMENTO_V5_TIPOS_MAP = {
+    "radio_assistencia": "Assistência Rádio",
+    "radio_instalacao": "Instalação Rádio",
+    "fibra_assistencia": "Fibra Assistência",
+    "fibra_instalacao": "Fibra Instalação / Mudança",
+    "segundo_ponto": "Segundo Ponto / Troca Roteador",
+    "link_loss": "Link Loss / Sinal Irregular",
 }
-
-# =========================
-# ESTOQUE
-# =========================
 
 TIPO_RETIRADA_OPCOES = [
     ("troca", "Troca"),
     ("cancelamento", "Cancelamento"),
 ]
 TIPO_RETIRADA_MAP = dict(TIPO_RETIRADA_OPCOES)
-
-ROTEADORES_OPCOES = [
-    ("zte_h3601pe_ax3000", "ZTE H3601PE AX3000"),
-    ("zte_h199a_ac1200", "ZTE H199A AC1200"),
-    ("mercusys_ac12g_ac1200", "Mercusys AC12G AC1200"),
-    ("mercusys_mr80x_ac1800", "Mercusys MR80X AC1800"),
-    ("tplink_c20", "TP-Link C20"),
-    ("tplink_c5", "TP-Link C5"),
-    ("tplink_c6", "TP-Link C6"),
-]
-ROTEADORES_MAP = {
-    "zte_h3601pe_ax3000": "ZTE H3601PE AX3000",
-    "zte_h199a_ac1200": "ZTE H199A AC1200",
-    "mercusys_ac12g_ac1200": "Mercusys AC12G AC1200",
-    "mercusys_mr80x_ac1800": "Mercusys MR80X AC1800",
-    "tplink_c20": "TP-Link C20",
-    "tplink_c5": "TP-Link C5",
-    "tplink_c6": "TP-Link C6",
-}
 
 ONU_OPCOES = [
     ("chima", "CHIMA"),
@@ -244,32 +145,6 @@ DESTINO_MAP = {
     "estoque_fnd": "Estoque FND",
     "estoque_vt": "Estoque VT",
     "estoque_sjrp": "Estoque SJRP",
-}
-
-RECEBIDO_POR_OPCOES = [
-    ("caua", "Cauã"),
-    ("giovani", "Giovani"),
-    ("dwedinei", "Dwedinei"),
-    ("leonardo", "Leonardo"),
-    ("kesli", "Kesli"),
-]
-RECEBIDO_POR_MAP = {
-    "caua": "Cauã",
-    "giovani": "Giovani",
-    "dwedinei": "Dwedinei",
-    "leonardo": "Leonardo",
-    "kesli": "Kesli",
-}
-
-CIDADE_OPCOES = [
-    ("fernandopolis", "Fernandópolis"),
-    ("votuporanga", "Votuporanga"),
-    ("sjrp", "São José do Rio Preto"),
-]
-CIDADE_MAP = {
-    "fernandopolis": "Fernandópolis",
-    "votuporanga": "Votuporanga",
-    "sjrp": "São José do Rio Preto",
 }
 
 

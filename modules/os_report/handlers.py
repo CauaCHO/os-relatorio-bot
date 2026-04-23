@@ -11,15 +11,12 @@ from core.storage import (
     obter_pendencia,
     remover_pendencia,
 )
+from core.config_store import get_tecnicos, get_roteadores, get_locais_instalacao
 from shared.commands import ajuda_texto, status_texto
 from shared.keyboards import (
     build_inline_keyboard,
-    TECNICOS_OPCOES,
-    TECNICOS_MAP,
     SIM_NAO_OPCOES,
     SIM_NAO_MAP,
-    PROBLEMAS_OPCOES,
-    PROBLEMAS_MAP,
     ENERGIA_OPCOES,
     ENERGIA_MAP,
     CANAIS_24_OPCOES,
@@ -29,16 +26,44 @@ from shared.keyboards import (
     GERAR_RETIRADA_OPCOES,
     REMOVER_PENDENCIA_OPCOES,
     ATENDIMENTO_V5_TIPOS_MAP,
-    ROTEADOR_SUGESTOES_OPCOES,
-    ROTEADOR_SUGESTOES_MAP,
-    LOCAL_INSTALACAO_OPCOES,
-    LOCAL_INSTALACAO_MAP,
 )
 from modules.os_report.modelos import MODELOS_ATENDIMENTO
 from modules.os_report.report import montar_relatorio
 from modules.material_delivery.handlers import iniciar_fluxo_retirada_prefill
 
 usuarios = {}
+
+
+def _tecnicos_options():
+    itens = get_tecnicos()
+    return [(str(i), nome) for i, nome in enumerate(itens)]
+
+
+def _tecnicos_map():
+    itens = get_tecnicos()
+    return {str(i): nome for i, nome in enumerate(itens)}
+
+
+def _roteadores_options():
+    itens = get_roteadores()
+    if "Outros" not in itens and "Outro" not in itens:
+        itens = itens + ["Outros"]
+    return [(str(i), nome) for i, nome in enumerate(itens)]
+
+
+def _roteadores_map():
+    itens = [x for _, x in _roteadores_options()]
+    return {str(i): nome for i, nome in enumerate(itens)}
+
+
+def _locais_options():
+    itens = get_locais_instalacao()
+    return [(str(i), nome) for i, nome in enumerate(itens)]
+
+
+def _locais_map():
+    itens = get_locais_instalacao()
+    return {str(i): nome for i, nome in enumerate(itens)}
 
 
 def montar_cabecalho_grupo(user) -> str:
@@ -76,9 +101,7 @@ def _mapa_opcoes(campo: dict):
     if tipo == "sim_nao":
         return SIM_NAO_OPCOES, SIM_NAO_MAP
     if tipo == "tecnico":
-        return TECNICOS_OPCOES, TECNICOS_MAP
-    if tipo == "problema":
-        return PROBLEMAS_OPCOES, PROBLEMAS_MAP
+        return _tecnicos_options(), _tecnicos_map()
     if tipo == "energia":
         return ENERGIA_OPCOES, ENERGIA_MAP
     if tipo == "canal24":
@@ -86,9 +109,9 @@ def _mapa_opcoes(campo: dict):
     if tipo == "canal5":
         return CANAIS_5_OPCOES, None
     if tipo == "roteador_sugestao":
-        return ROTEADOR_SUGESTOES_OPCOES, ROTEADOR_SUGESTOES_MAP
+        return _roteadores_options(), _roteadores_map()
     if tipo == "local_sugestao":
-        return LOCAL_INSTALACAO_OPCOES, LOCAL_INSTALACAO_MAP
+        return _locais_options(), _locais_map()
 
     return None, None
 
@@ -97,6 +120,7 @@ def _pre_campos():
     return [
         {"id": "os", "titulo": "Número da O.S.", "tipo": "os"},
         {"id": "inicio", "titulo": "Hora iniciada", "tipo": "hora"},
+        {"id": "fim", "titulo": "Hora finalizada", "tipo": "hora"},
         {"id": "tec_ext", "titulo": "Técnico externo", "tipo": "tecnico"},
         {"id": "tec_int", "titulo": "Técnico interno", "tipo": "tecnico"},
     ]
@@ -174,31 +198,43 @@ async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def _pergunta_campo(campo: dict) -> str:
     custom = {
         "os": "📌 Digite o número da O.S.:",
-        "inicio": "⏰ Digite a hora iniciada no formato HH:MM\nExemplo: 16:04",
-        "tec_ext": "👨‍🔧 Selecione o técnico externo:",
-        "tec_int": "🧑‍💻 Selecione o técnico interno:",
-        "sinal_fibra": "📉 Informe o sinal da fibra:",
-        "sinal_cto": "📡 Informe o sinal da CTO:",
-        "material_linkado": "🔗 O material foi linkado no MK?",
+        "inicio": "⏰ Que horas você começou o serviço?\nExemplo: 15:30",
+        "fim": "⏰ Que horas você finalizou o serviço?\nExemplo: 18:53",
+        "tec_ext": "👨‍🔧 Quem foi o técnico externo?",
+        "tec_int": "🧑‍💻 Quem foi o técnico interno?",
+        "cabo_wifi": "🔌 Quais equipamentos estavam no cabo e quais estavam no Wi-Fi?",
+        "local_instalacao": "📍 Onde os equipamentos ficaram instalados?",
+        "mapeamento_wifi": "📶 Você fez o mapeamento do local pelo WiFiman?",
+        "iptv_tvbox": "📺 O cliente tem IPTV ou TV Box?",
+        "dados_antena": "📡 Informe alinhamento, sinal e TX/RX da antena:",
+        "sinal_fibra": "📉 Qual foi o sinal da fibra?",
+        "sinal_cto": "📡 Qual foi o sinal da CTO?",
         "houve_dano": "⚠️ Houve dano no local?",
-        "descricao_dano": "✍️ Descreva o dano no local:",
-        "iptv_tvbox": "📺 Cliente possui IPTV/TVBOX?",
-        "orientacao_24_5": "📡 O cliente foi orientado sobre 2.4Ghz e 5.8Ghz?",
-        "equipamentos_atualizados": "🔄 Os equipamentos estão atualizados?",
-        "config_padrao": "⚙️ Ficou dentro do padrão da empresa?",
-        "acesso_remoto": "🧩 O acesso remoto foi verificado?",
-        "teste_realizado": "🚀 Foi realizado teste de velocidade?",
-        "verificou_melhor_canal": "📶 Foi verificado o melhor canal da rede Wi-Fi?",
-        "pos_venda": "🤝 Foi realizado o pós-venda imediato?",
-        "motivo_sem_pos_venda": "✍️ Informe o motivo de não ter sido realizado o pós-venda:",
+        "descricao_dano": "✍️ Descreva o dano encontrado:",
+        "orientacao_24_5": "📡 Você orientou o cliente sobre 2.4Ghz e 5.8Ghz?",
+        "teste_realizado": "🚀 Você fez o teste de velocidade?",
+        "teste_velocidade": "🚀 Qual foi o valor do speedtest?",
+        "verificou_melhor_canal": "📶 Você verificou o melhor canal do Wi-Fi?",
+        "config_padrao": "⚙️ Ficou tudo dentro do padrão da empresa?",
+        "acesso_remoto": "🧩 Você verificou o acesso remoto?",
+        "equipamentos_atualizados": "🔄 ONU e roteador estão atualizados?",
+        "problema_procedimento": "🛠️ Qual era o problema e o que foi feito no local?",
+        "fixacao": "🔩 Como os equipamentos ficaram fixados?",
+        "energia": "🔌 Em que os equipamentos ficaram ligados?",
+        "organizacao": "🧹 A instalação ficou organizada no padrão?",
+        "pos_venda": "🤝 Foi feito o pós-venda imediato?",
+        "motivo_sem_pos_venda": "✍️ Por que o pós-venda não foi feito?",
+        "retirada_cabo_antigo": "🧵 Em mudança de endereço, o cabo antigo foi retirado? Se quiser, detalhe aqui.",
+        "modelo_segundo_roteador": "📡 Qual foi o modelo do roteador do segundo ponto?",
+        "ssid_segundo_roteador": "📶 Qual ficou sendo o nome da rede (SSID)?",
+        "senha_segundo_roteador": "🔒 Qual ficou sendo a senha?",
         "passagem_cabo": "🔌 Houve passagem de cabo com testes?",
-        "modelo_segundo_roteador": "📡 Selecione o modelo do roteador do segundo ponto:",
-        "ssid_segundo_roteador": "📶 Informe o SSID do segundo ponto:",
-        "senha_segundo_roteador": "🔒 Informe a senha do segundo ponto:",
-        "local_instalacao": "📍 Selecione o local da instalação:",
-        "teste_velocidade": "🚀 Informe o valor do speedtest:",
-        "materiais_utilizados": "📦 Informe o material utilizado:",
-        "materiais_retirados": "📤 Informe o material retirado:",
+        "compatibilidade_roteador": "📡 Qual modelo do roteador e ele é compatível com o plano?",
+        "motivo_link_loss": "🚨 Qual foi o motivo do Link Loss e como resolveu?",
+        "mapeamento_primeiro_segundo": "📶 Foi feito o mapeamento do primeiro e do segundo ponto?",
+        "materiais_utilizados": "📦 Digite os materiais utilizados:",
+        "materiais_retirados": "📤 Digite os materiais retirados:",
+        "material_linkado": "🔗 O material foi linkado no MK?",
     }
     return custom.get(campo["id"], f"✍️ {campo.get('titulo', 'Informe o campo')}:")
 
@@ -215,13 +251,13 @@ async def perguntar(message, estado: dict):
         return
 
     if estado["step"] == "confirmar":
-        relatorio_preview = montar_relatorio(dados)
         resumo = [
             "📋 <b>Resumo antes do envio</b>",
             "",
             f"<b>O.S.:</b> {dados.get('os', '-')}",
             f"<b>Tipo:</b> {dados.get('tipo_v5', '-')}",
-            f"<b>Hora:</b> {dados.get('inicio', '-')}",
+            f"<b>Hora inicial:</b> {dados.get('inicio', '-')}",
+            f"<b>Hora final:</b> {dados.get('fim', '-')}",
             f"<b>Técnico externo:</b> {dados.get('tec_ext', '-')}",
             f"<b>Técnico interno:</b> {dados.get('tec_int', '-')}",
             "",
@@ -247,7 +283,7 @@ async def perguntar(message, estado: dict):
 
     if estado["step"] == "perguntar_retirada":
         await message.reply_text(
-            "📦 Foram informados materiais utilizados/retirados.\nDeseja gerar também o relatório de entrega no estoque?",
+            "📦 Foram informados materiais utilizados ou retirados.\nDeseja gerar também o relatório de entrega no estoque?",
             reply_markup=build_inline_keyboard("gerar_retirada", GERAR_RETIRADA_OPCOES)
         )
         return
@@ -403,27 +439,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if campo["tipo"] == "sim_nao":
             valor = SIM_NAO_MAP.get(code, code)
         elif campo["tipo"] == "tecnico":
-            valor = TECNICOS_MAP.get(code, code)
-        elif campo["tipo"] == "problema":
-            valor = PROBLEMAS_MAP.get(code, code)
+            valor = _tecnicos_map().get(code, code)
         elif campo["tipo"] == "energia":
             valor = ENERGIA_MAP.get(code, code)
         elif campo["tipo"] == "roteador_sugestao":
-            if code == "outro":
-                estado["dados"][campo["id"]] = "Outros"
-                estado["campo_atual"] = campo["id"]
-                estado["step"] = "campo_outro_roteador"
-                await query.message.reply_text("✍️ Informe manualmente o modelo do roteador:")
+            valor = _roteadores_map().get(code, code)
+            if valor.lower().startswith("outro"):
+                estado["step"] = "campo_texto"
+                await query.message.reply_text("✍️ Digite manualmente o modelo do roteador:")
                 return
-            valor = ROTEADOR_SUGESTOES_MAP.get(code, code)
         elif campo["tipo"] == "local_sugestao":
-            if code == "outro":
-                estado["dados"][campo["id"]] = "Outros"
-                estado["campo_atual"] = campo["id"]
-                estado["step"] = "campo_outro_local"
-                await query.message.reply_text("✍️ Informe manualmente o local da instalação:")
+            valor = _locais_map().get(code, code)
+            if valor.lower().startswith("outro"):
+                estado["step"] = "campo_texto"
+                await query.message.reply_text("✍️ Digite manualmente o local da instalação:")
                 return
-            valor = LOCAL_INSTALACAO_MAP.get(code, code)
         else:
             valor = mapa.get(code, code) if mapa else code
 
@@ -453,21 +483,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     estado = usuarios[user_id]
     dados = estado["dados"]
     tipo_v5 = dados["tipo_v5"]
+    texto = update.effective_message.text.strip()
 
-    if estado["step"] == "campo_outro_roteador":
-        campo = next(c for c in _todos_campos_fluxo(tipo_v5, dados) if c["id"] == estado["campo_atual"])
-        _salvar_valor_campo(estado, campo, update.message.text.strip())
+    if estado["step"] == "campo_texto":
+        campo_id = estado["campo_atual"]
+        campo = next(c for c in _todos_campos_fluxo(tipo_v5, dados) if c["id"] == campo_id)
+        _salvar_valor_campo(estado, campo, texto)
         estado["step"] = "campo"
         _proximo_campo(estado)
-        await perguntar(update.message, estado)
-        return
-
-    if estado["step"] == "campo_outro_local":
-        campo = next(c for c in _todos_campos_fluxo(tipo_v5, dados) if c["id"] == estado["campo_atual"])
-        _salvar_valor_campo(estado, campo, update.message.text.strip())
-        estado["step"] = "campo"
-        _proximo_campo(estado)
-        await perguntar(update.message, estado)
+        await perguntar(update.effective_message, estado)
         return
 
     if estado["step"] != "campo":
@@ -475,11 +499,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     campo_id = estado["campo_atual"]
     campo = next(c for c in _todos_campos_fluxo(tipo_v5, dados) if c["id"] == campo_id)
-    texto = update.message.text.strip()
 
     if campo["tipo"] == "os":
         if not validar_os(texto):
-            await update.message.reply_text("⚠️ Número de O.S. inválido. Digite apenas números.")
+            await update.effective_message.reply_text("⚠️ Número de O.S. inválido. Digite apenas números.")
             return
 
         dados["os"] = texto
@@ -487,37 +510,42 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if pendencia:
             estado["os_pendente"] = texto
             estado["step"] = "remover_pendencia"
-            await perguntar(update.message, estado)
+            await perguntar(update.effective_message, estado)
             return
 
         _proximo_campo(estado)
-        await perguntar(update.message, estado)
+        await perguntar(update.effective_message, estado)
         return
 
     if campo["tipo"] == "hora":
         if not validar_hora(texto):
-            await update.message.reply_text("⚠️ Hora inválida. Use o formato HH:MM.")
+            await update.effective_message.reply_text("⚠️ Hora inválida. Use o formato HH:MM.")
             return
-        dados["inicio"] = texto
-        tecnico_padrao = obter_tecnico_usuario(user_id)
-        if tecnico_padrao and not estado.get("editando"):
-            dados["tec_ext"] = tecnico_padrao
-            estado["campo_atual"] = "tec_int"
-            estado["step"] = "campo"
-            await perguntar(update.message, estado)
-            return
+
+        dados[campo["id"]] = texto
+
+        if campo["id"] == "inicio":
+            tecnico_padrao = obter_tecnico_usuario(user_id)
+            if tecnico_padrao and not estado.get("editando"):
+                dados["tec_ext"] = tecnico_padrao
+                estado["campo_atual"] = "tec_int"
+                estado["step"] = "campo"
+                await perguntar(update.effective_message, estado)
+                return
+
         _proximo_campo(estado)
-        await perguntar(update.message, estado)
+        await perguntar(update.effective_message, estado)
         return
 
     if campo["tipo"] == "sinal":
         valor = normalizar_sinal(texto)
         if valor is None:
-            await update.message.reply_text("⚠️ Digite um valor válido. Exemplo: 17.22 ou apenas -")
+            await update.effective_message.reply_text("⚠️ Digite um valor válido. Exemplo: 17.22 ou apenas -")
             return
+
         _salvar_valor_campo(estado, campo, texto, valor)
         _proximo_campo(estado)
-        await perguntar(update.message, estado)
+        await perguntar(update.effective_message, estado)
         return
 
     if campo["tipo"] == "speed":
@@ -525,13 +553,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             float(texto_limpo.replace(",", "."))
         except ValueError:
-            await update.message.reply_text("⚠️ Digite apenas o valor do speedtest. Exemplo: 250")
+            await update.effective_message.reply_text("⚠️ Digite apenas o valor do speedtest. Exemplo: 250")
             return
+
         _salvar_valor_campo(estado, campo, texto, texto_limpo)
         _proximo_campo(estado)
-        await perguntar(update.message, estado)
+        await perguntar(update.effective_message, estado)
         return
 
     _salvar_valor_campo(estado, campo, texto)
     _proximo_campo(estado)
-    await perguntar(update.message, estado)
+    await perguntar(update.effective_message, estado)

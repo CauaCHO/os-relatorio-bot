@@ -6,7 +6,7 @@ MODELOS_ATENDIMENTO = {
                 "titulo": "SEÇÃO 1 - PADRÃO PARA FINALIZAÇÃO DE O.S ASSISTÊNCIA RÁDIO",
                 "campos": [
                     {"id": "cabo_wifi", "item": "1.1", "titulo": "Informação dos equipamentos pelo cabo e Wi-Fi", "tipo": "texto"},
-                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "texto"},
+                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "local_sugestao"},
                     {"id": "mapeamento_wifi", "item": "1.3", "titulo": "Feito mapeamento de todo o local pelo WiFiman", "tipo": "sim_nao"},
                     {"id": "iptv_tvbox", "item": "1.4", "titulo": "Verificação de IPTV/TVBOX", "tipo": "sim_nao"},
                     {"id": "dados_antena", "item": "1.5", "titulo": "Informação da tela principal da antena, alinhamento, sinal, TX/RX", "tipo": "texto"},
@@ -39,7 +39,6 @@ MODELOS_ATENDIMENTO = {
             },
         ],
     },
-
     "Instalação Rádio": {
         "codigo": "radio_instalacao",
         "secoes": [
@@ -47,7 +46,7 @@ MODELOS_ATENDIMENTO = {
                 "titulo": "SEÇÃO 1 - PADRÃO PARA FINALIZAÇÃO DE O.S INSTALAÇÃO RÁDIO",
                 "campos": [
                     {"id": "cabo_wifi", "item": "1.1", "titulo": "Informação dos equipamentos pelo cabo e Wi-Fi", "tipo": "texto"},
-                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "texto"},
+                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "local_sugestao"},
                     {"id": "mapeamento_wifi", "item": "1.3", "titulo": "Feito mapeamento de todo o local pelo WiFiman", "tipo": "sim_nao"},
                     {"id": "iptv_tvbox", "item": "1.4", "titulo": "Verificação de IPTV/TVBOX", "tipo": "sim_nao"},
                     {"id": "dados_antena", "item": "1.5", "titulo": "Informação da tela principal da antena, alinhamento, sinal, TX/RX", "tipo": "texto"},
@@ -82,7 +81,6 @@ MODELOS_ATENDIMENTO = {
             },
         ],
     },
-
     "Fibra Assistência": {
         "codigo": "fibra_assistencia",
         "secoes": [
@@ -90,7 +88,7 @@ MODELOS_ATENDIMENTO = {
                 "titulo": "SEÇÃO 1 - PADRÃO DE FINALIZAÇÃO",
                 "campos": [
                     {"id": "cabo_wifi", "item": "1.1", "titulo": "Informação dos equipamentos pelo cabo e Wi-Fi", "tipo": "texto"},
-                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "texto"},
+                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "local_sugestao"},
                     {"id": "mapeamento_wifi", "item": "1.3", "titulo": "Feito mapeamento de todo o local pelo WiFiman", "tipo": "sim_nao"},
                     {"id": "iptv_tvbox", "item": "1.4", "titulo": "Verificação de IPTV/TVBOX", "tipo": "sim_nao"},
                     {"id": "sinal_fibra", "item": "1.5", "titulo": "Medição de sinal da Fibra", "tipo": "sinal"},
@@ -125,7 +123,6 @@ MODELOS_ATENDIMENTO = {
             },
         ],
     },
-
     "Fibra Instalação / Mudança": {
         "codigo": "fibra_instalacao",
         "secoes": [
@@ -133,7 +130,7 @@ MODELOS_ATENDIMENTO = {
                 "titulo": "SEÇÃO 1 - PADRÃO DE FINALIZAÇÃO",
                 "campos": [
                     {"id": "cabo_wifi", "item": "1.1", "titulo": "Informação dos equipamentos pelo cabo e Wi-Fi", "tipo": "texto"},
-                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "texto"},
+                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "local_sugestao"},
                     {"id": "mapeamento_wifi", "item": "1.3", "titulo": "Feito mapeamento de todo o local pelo WiFiman", "tipo": "sim_nao"},
                     {"id": "iptv_tvbox", "item": "1.4", "titulo": "Verificação de IPTV/TVBOX", "tipo": "sim_nao"},
                     {"id": "sinal_cto", "item": "1.5", "titulo": "Medição de sinal da Fibra na CTO", "tipo": "sinal"},
@@ -171,7 +168,6 @@ MODELOS_ATENDIMENTO = {
             },
         ],
     },
-
     "Segundo Ponto / Troca Roteador": {
         "codigo": "segundo_ponto",
         "secoes": [
@@ -216,7 +212,6 @@ MODELOS_ATENDIMENTO = {
             },
         ],
     },
-
     "Link Loss / Sinal Irregular": {
         "codigo": "link_loss",
         "secoes": [
@@ -224,7 +219,7 @@ MODELOS_ATENDIMENTO = {
                 "titulo": "SEÇÃO 1 - PADRÃO DE FINALIZAÇÃO",
                 "campos": [
                     {"id": "motivo_link_loss", "item": "1.1", "titulo": "Motivo do Link Loss e resolução do problema", "tipo": "texto"},
-                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "texto"},
+                    {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "local_sugestao"},
                     {"id": "compatibilidade_roteador", "item": "1.3", "titulo": "Verificação do modelo do roteador e compatibilidade com o plano", "tipo": "texto"},
                     {"id": "teste_realizado", "item": "1.4", "titulo": "Realização de teste de velocidade", "tipo": "sim_nao"},
                     {"id": "teste_velocidade", "item": "1.4.1", "titulo": "Valor do teste de velocidade", "tipo": "speed", "condicao": {"campo": "teste_realizado", "valor": "Sim"}},

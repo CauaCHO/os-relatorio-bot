@@ -10,6 +10,11 @@ from config import TOKEN
 from core.error_handler import error_handler
 
 from modules.menu.handlers import start_menu, handle_menu_callback
+from modules.config_panel.handlers import (
+    config_command,
+    handle_message as config_msg,
+    handle_callback as config_callback,
+)
 
 from modules.os_report.handlers import (
     atendimento,
@@ -50,6 +55,7 @@ def main():
     # COMANDOS
     app.add_handler(CommandHandler("start", start_menu))
     app.add_handler(CommandHandler("ajuda", ajuda))
+    app.add_handler(CommandHandler("config", config_command))
 
     app.add_handler(CommandHandler("atendimento", atendimento))
     app.add_handler(CommandHandler("assistencia", assistencia))
@@ -73,10 +79,18 @@ def main():
     # CALLBACKS
     app.add_handler(
         CallbackQueryHandler(
+            config_callback,
+            pattern=r"^(config_cat|config_action|config_remove_).+"
+        ),
+        group=0
+    )
+
+    app.add_handler(
+        CallbackQueryHandler(
             handle_menu_callback,
             pattern=r"^(menu|menu_atendimento_v5)\|"
         ),
-        group=0
+        group=1
     )
 
     app.add_handler(
@@ -84,15 +98,15 @@ def main():
             os_callback,
             pattern=r"^(reiniciar_fluxo|resp|confirmar|edit_os|gerar_retirada|remover_pendencia)\|"
         ),
-        group=1
+        group=2
     )
 
     app.add_handler(
         CallbackQueryHandler(
             material_callback,
-            pattern=r"^(reiniciar_material|tipo_retirada|tem_roteador|roteador|tem_onu|onu|patchcord|outro_tem|destino|recebido_por|cidade|confirmar_material|editar_material)\|"
+            pattern=r"^(reiniciar_material|tipo_retirada|tem_roteador|roteador|tem_onu|onu|patchcord|outro_tem|destino|recebido_por|confirmar_material|editar_material)\|"
         ),
-        group=2
+        group=3
     )
 
     app.add_handler(
@@ -100,13 +114,14 @@ def main():
             ausencia_callback,
             pattern=r"^(confirmar_ausencia|editar_ausencia)\|"
         ),
-        group=3
+        group=4
     )
 
-    # TEXTO
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, os_msg), group=4)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, material_msg), group=5)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ausencia_msg), group=6)
+    # MENSAGENS
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, config_msg), group=5)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, os_msg), group=6)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, material_msg), group=7)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ausencia_msg), group=8)
 
     app.add_error_handler(error_handler)
 

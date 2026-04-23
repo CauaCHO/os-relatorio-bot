@@ -3,9 +3,9 @@ def ajuda_texto() -> str:
         "🚀 <b>Sistema Flash Reports</b>\n\n"
         "<b>Comandos disponíveis:</b>\n"
         "/start - Abre o menu principal\n"
-        "/atendimento - Inicia relatório de atendimento\n"
+        "/atendimento - Abre o módulo de atendimento\n"
         "/estoque - Inicia relatório de entrega no estoque\n"
-        "/retirada - Módulo de retirada\n"
+        "/retirada - Alias do estoque\n"
         "/ausente - Inicia relatório de cliente ausente\n"
         "/paralisada - Inicia relatório de O.S. paralisada\n"
         "/pendencias - Lista O.S. paralisadas\n"
@@ -15,6 +15,7 @@ def ajuda_texto() -> str:
         "/cancelar - Cancela atendimento\n"
         "/cancelar_material - Cancela estoque\n"
         "/cancelar_ausencia - Cancela ausente/paralisada\n"
+        "/config - Painel restrito de configurações\n"
         "/ajuda - Mostra esta mensagem\n\n"
         "• Use o bot no privado\n"
         "• Os relatórios são enviados automaticamente ao grupo\n"
@@ -37,7 +38,6 @@ def pendencias_texto(pendencias) -> str:
 
     linhas = ["📋 <b>Pendências</b>", ""]
 
-    # caso venha lista
     if isinstance(pendencias, list):
         for i, item in enumerate(pendencias, start=1):
             linhas.append(f"{i}️⃣ <b>O.S. {item.get('os', '-')}</b>")
@@ -48,7 +48,6 @@ def pendencias_texto(pendencias) -> str:
         linhas.append(f"Total: {len(pendencias)} O.S.")
         return "\n".join(linhas)
 
-    # caso venha dict
     if isinstance(pendencias, dict):
         for i, (os_numero, dados) in enumerate(pendencias.items(), start=1):
             linhas.append(f"{i}️⃣ <b>O.S. {os_numero}</b>")
