@@ -1,0 +1,22 @@
+Atualização Flash Reports v5.2
+
+Como aplicar:
+1. Extraia este ZIP na raiz do projeto os-relatorio-bot, substituindo os arquivos existentes.
+2. Verifique se a pasta modules/client_withdrawal foi criada.
+3. Rode local:
+   python main.py
+4. Teste:
+   /start
+   /config
+   /pendencias
+   /baixar_pendencia 123456
+   /retirada_cliente
+   Atendimento > Segundo Ponto / Troca Roteador
+5. Depois:
+   git add .
+   git commit -m "feat: v5.2 segundo ponto flexivel config pendencias e retirada cliente"
+   git push origin main
+
+Observação:
+- Se usar Railway, configure CONFIG_PASSWORD em Variables.
+- O /config agora mostra seu ID do Telegram para cadastrar em data/app_config.json caso username falhe.

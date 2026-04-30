@@ -28,6 +28,13 @@ from modules.os_report.handlers import (
     handle_callback as os_callback
 )
 
+from modules.client_withdrawal.handlers import (
+    retirada_cliente,
+    cancelar_retirada_cliente,
+    handle_message as retirada_cliente_msg,
+    handle_callback as retirada_cliente_callback,
+)
+
 from modules.material_delivery.handlers import (
     retirada,
     estoque,
@@ -42,6 +49,7 @@ from modules.absent_client.handlers import (
     ausente,
     paralisada,
     pendencias,
+    baixar_pendencia,
     cancelar_ausencia,
     status_ausencia,
     handle_message as ausencia_msg,
@@ -64,6 +72,9 @@ def main():
     app.add_handler(CommandHandler("cancelar", cancelar))
     app.add_handler(CommandHandler("status", status))
 
+    app.add_handler(CommandHandler("retirada_cliente", retirada_cliente))
+    app.add_handler(CommandHandler("cancelar_retirada_cliente", cancelar_retirada_cliente))
+
     app.add_handler(CommandHandler("retirada", retirada))
     app.add_handler(CommandHandler("estoque", estoque))
     app.add_handler(CommandHandler("cancelar_material", cancelar_material))
@@ -73,6 +84,7 @@ def main():
     app.add_handler(CommandHandler("ausencia", ausencia))
     app.add_handler(CommandHandler("paralisada", paralisada))
     app.add_handler(CommandHandler("pendencias", pendencias))
+    app.add_handler(CommandHandler("baixar_pendencia", baixar_pendencia))
     app.add_handler(CommandHandler("cancelar_ausencia", cancelar_ausencia))
     app.add_handler(CommandHandler("status_ausencia", status_ausencia))
 
@@ -103,25 +115,34 @@ def main():
 
     app.add_handler(
         CallbackQueryHandler(
-            material_callback,
-            pattern=r"^(reiniciar_material|tipo_retirada|tem_roteador|roteador|tem_onu|onu|patchcord|outro_tem|destino|recebido_por|confirmar_material|editar_material)\|"
+            retirada_cliente_callback,
+            pattern=r"^(cw_confirmar|cw_estoque)\|"
         ),
         group=3
     )
 
     app.add_handler(
         CallbackQueryHandler(
-            ausencia_callback,
-            pattern=r"^(confirmar_ausencia|editar_ausencia)\|"
+            material_callback,
+            pattern=r"^(reiniciar_material|tipo_retirada|tem_roteador|roteador|tem_onu|onu|patchcord|outro_tem|destino|recebido_por|confirmar_material|editar_material)\|"
         ),
         group=4
     )
 
+    app.add_handler(
+        CallbackQueryHandler(
+            ausencia_callback,
+            pattern=r"^(confirmar_ausencia|editar_ausencia|baixar_pendencia)\|"
+        ),
+        group=5
+    )
+
     # MENSAGENS
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, config_msg), group=5)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, os_msg), group=6)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, material_msg), group=7)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ausencia_msg), group=8)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, config_msg), group=6)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, os_msg), group=7)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, retirada_cliente_msg), group=8)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, material_msg), group=9)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ausencia_msg), group=10)
 
     app.add_error_handler(error_handler)
 

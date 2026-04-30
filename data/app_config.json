@@ -3,6 +3,7 @@
     "GenericCHO",
     "EstoqueFlashNetFND"
   ],
+  "allowed_config_ids": [],
   "config_password": "xxxxx",
   "tecnicos": [
     "Cauã Henrique",

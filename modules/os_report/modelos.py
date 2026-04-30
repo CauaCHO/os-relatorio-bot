@@ -174,9 +174,11 @@ MODELOS_ATENDIMENTO = {
             {
                 "titulo": "SEÇÃO 1 - PADRÃO DE FINALIZAÇÃO",
                 "campos": [
-                    {"id": "modelo_segundo_roteador", "item": "1.1", "titulo": "Modelo do roteador do segundo ponto (SSID e senha)", "tipo": "roteador_sugestao"},
-                    {"id": "ssid_segundo_roteador", "item": "1.1.1", "titulo": "SSID do segundo ponto", "tipo": "texto"},
-                    {"id": "senha_segundo_roteador", "item": "1.1.2", "titulo": "Senha do segundo ponto", "tipo": "texto"},
+                    {"id": "tipo_segundo_ponto", "item": "1.1", "titulo": "Equipamento destinado ao segundo ponto", "tipo": "segundo_ponto_tipo"},
+                    {"id": "modelo_segundo_roteador", "item": "1.1.1", "titulo": "Modelo do roteador do segundo ponto", "tipo": "roteador_sugestao", "condicao": {"campo": "tipo_segundo_ponto", "valor": "Roteador"}},
+                    {"id": "ssid_segundo_roteador", "item": "1.1.2", "titulo": "SSID do segundo ponto", "tipo": "texto", "condicao": {"campo": "tipo_segundo_ponto", "valor": "Roteador"}},
+                    {"id": "senha_segundo_roteador", "item": "1.1.3", "titulo": "Senha do segundo ponto", "tipo": "texto", "condicao": {"campo": "tipo_segundo_ponto", "valor": "Roteador"}},
+                    {"id": "descricao_segundo_ponto", "item": "1.1.4", "titulo": "Descrição do equipamento do segundo ponto", "tipo": "texto", "condicao": {"campo": "tipo_segundo_ponto", "valor": "Outro"}},
                     {"id": "local_instalacao", "item": "1.2", "titulo": "Local da instalação dos equipamentos", "tipo": "local_sugestao"},
                     {"id": "config_padrao", "item": "1.3", "titulo": "Configurações do roteador dentro do padrão (primeiro e segundo ponto)", "tipo": "sim_nao"},
                     {"id": "passagem_cabo", "item": "1.4", "titulo": "Houve passagem de cabo de rede com testes", "tipo": "sim_nao"},

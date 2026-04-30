@@ -1,9 +1,5 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
-# =========================
-# OPÇÕES FIXAS
-# =========================
-
 SIM_NAO_OPCOES = [
     ("sim", "Sim"),
     ("nao", "Não"),
@@ -39,6 +35,7 @@ ENERGIA_OPCOES = [
     ("tomada_tripla", "Tomada tripla"),
     ("outro", "Outro"),
 ]
+
 ENERGIA_MAP = {
     "adaptador_t": "Adaptador T",
     "filtro": "Filtro de linha",
@@ -88,9 +85,26 @@ CANAIS_5_OPCOES = [
     ("161", "Canal 161"),
 ]
 
+SEGUNDO_PONTO_TIPO_OPCOES = [
+    ("roteador", "📡 Roteador"),
+    ("pc", "💻 PC"),
+    ("tv", "📺 TV"),
+    ("camera", "🎥 Câmera"),
+    ("outro", "➕ Outro"),
+]
+
+SEGUNDO_PONTO_TIPO_MAP = {
+    "roteador": "Roteador",
+    "pc": "PC",
+    "tv": "TV",
+    "camera": "Câmera",
+    "outro": "Outro",
+}
+
 MENU_PRINCIPAL_OPCOES = [
     ("atendimento", "🔧 Atendimento"),
-    ("estoque", "🏢 Estoque"),
+    ("retirada_cliente", "📦 Retirada Cliente"),
+    ("estoque", "🏢 Entrega Estoque"),
     ("ausente", "🚪 Ausente"),
     ("paralisada", "⏸️ Paralisada"),
     ("pendencias", "📋 Pendências"),
@@ -119,6 +133,7 @@ TIPO_RETIRADA_OPCOES = [
     ("troca", "Troca"),
     ("cancelamento", "Cancelamento"),
 ]
+
 TIPO_RETIRADA_MAP = dict(TIPO_RETIRADA_OPCOES)
 
 ONU_OPCOES = [
@@ -128,6 +143,7 @@ ONU_OPCOES = [
     ("tplink", "TP-LINK"),
     ("huawei", "HUAWEI"),
 ]
+
 ONU_MAP = {
     "chima": "CHIMA",
     "alcatel": "ALCATEL",
@@ -141,6 +157,7 @@ DESTINO_OPCOES = [
     ("estoque_vt", "Estoque VT"),
     ("estoque_sjrp", "Estoque SJRP"),
 ]
+
 DESTINO_MAP = {
     "estoque_fnd": "Estoque FND",
     "estoque_vt": "Estoque VT",

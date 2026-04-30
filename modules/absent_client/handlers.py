@@ -2,7 +2,7 @@ from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 
 from core.helpers import validar_os
-from core.storage import salvar_historico, salvar_pendencia, listar_pendencias
+from core.storage import salvar_historico, salvar_pendencia, listar_pendencias, remover_pendencia
 from core.text_processor import processar_texto, languagetool_ativo
 from shared.commands import status_texto, pendencias_texto
 from shared.keyboards import (
@@ -48,6 +48,7 @@ async def ausencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "dados": {"ocorrencia": "Cliente ausente"},
         "modo": "ausencia",
     }
+
     await update.effective_message.reply_text(
         "🚪 Vamos iniciar o relatório de Cliente Ausente.\n\n📌 Digite o número da O.S.:",
         reply_markup=ReplyKeyboardRemove()
@@ -67,6 +68,7 @@ async def paralisada(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "dados": {"ocorrencia": "O.S. paralisada"},
         "modo": "paralisada",
     }
+
     await update.effective_message.reply_text(
         "⏸️ Vamos iniciar o relatório de O.S. Paralisada.\n\n📌 Digite o número da O.S.:",
         reply_markup=ReplyKeyboardRemove()
@@ -74,8 +76,32 @@ async def paralisada(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def pendencias(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto = pendencias_texto(listar_pendencias())
-    await update.effective_message.reply_text(texto, parse_mode="HTML")
+    pendencias_lista = listar_pendencias()
+    texto = pendencias_texto(pendencias_lista)
+
+    if not pendencias_lista:
+        await update.effective_message.reply_text(texto, parse_mode="HTML")
+        return
+
+    opcoes = [(item.get("os", "-"), f"✅ Baixar O.S. {item.get('os', '-')}") for item in pendencias_lista]
+    await update.effective_message.reply_text(
+        texto,
+        parse_mode="HTML",
+        reply_markup=build_inline_keyboard("baixar_pendencia", opcoes, per_row=1)
+    )
+
+
+async def baixar_pendencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.effective_message.reply_text("Use assim:\n/baixar_pendencia 331277")
+        return
+
+    os_numero = context.args[0].strip()
+    remover_pendencia(os_numero)
+
+    await update.effective_message.reply_text(
+        f"✅ O.S. {os_numero} removida da lista de pendências."
+    )
 
 
 async def cancelar_ausencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -86,6 +112,7 @@ async def cancelar_ausencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def status_ausencia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fluxo_ativo = update.effective_user.id in usuarios_ausencia
     step = usuarios_ausencia.get(update.effective_user.id, {}).get("step")
+
     await update.effective_message.reply_text(
         status_texto(fluxo_ativo, step, languagetool_ativo(), "Módulo Ausente / Paralisada"),
         parse_mode="HTML"
@@ -97,20 +124,36 @@ async def perguntar(message, estado: dict):
 
     if step == "texto":
         await message.reply_text("📝 Escreva o texto do relatório:", reply_markup=ReplyKeyboardRemove())
+
     elif step == "confirmar":
         await message.reply_text(
             "📨 Revisão final do relatório\n\nEscolha uma opção:",
             reply_markup=build_inline_keyboard("confirmar_ausencia", CONFIRMACAO_ENVIO_OPCOES)
         )
+
     elif step == "editar":
-        await message.reply_text("✏️ Selecione a etapa que deseja editar:", reply_markup=build_inline_keyboard("editar_ausencia", EDITAR_AUSENCIA_OPCOES, per_row=1))
+        await message.reply_text(
+            "✏️ Selecione a etapa que deseja editar:",
+            reply_markup=build_inline_keyboard("editar_ausencia", EDITAR_AUSENCIA_OPCOES, per_row=1)
+        )
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if not query or query.message.chat.type != "private":
         return
+
     await query.answer()
+
+    try:
+        field, code = query.data.split("|", 1)
+    except ValueError:
+        return
+
+    if field == "baixar_pendencia":
+        remover_pendencia(code)
+        await query.message.reply_text(f"✅ O.S. {code} removida das pendências.")
+        return
 
     user_id = query.from_user.id
     if user_id not in usuarios_ausencia:
@@ -120,13 +163,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     step = estado["step"]
     dados = estado["dados"]
 
-    field, code = query.data.split("|", 1)
-
     if step == "confirmar" and field == "confirmar_ausencia":
         if code == "enviar":
             relatorio = montar_relatorio_ausencia(dados)
             await enviar_grupo_longo(context, relatorio, query.from_user)
-            salvar_historico({"os": dados.get("os"), "tipo": dados.get("ocorrencia")}, relatorio, "Ausência/Paralisada")
+            salvar_historico(
+                {"os": dados.get("os"), "tipo": dados.get("ocorrencia")},
+                relatorio,
+                "Ausência/Paralisada"
+            )
 
             if dados.get("ocorrencia") == "O.S. paralisada":
                 username = f"@{query.from_user.username}" if query.from_user.username else query.from_user.first_name
@@ -171,6 +216,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not validar_os(texto):
             await update.message.reply_text("⚠️ Número de O.S. inválido. Digite apenas números.")
             return
+
         dados["os"] = texto
         estado["step"] = "texto"
 

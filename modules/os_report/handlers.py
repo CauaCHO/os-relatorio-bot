@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 
@@ -26,6 +28,8 @@ from shared.keyboards import (
     GERAR_RETIRADA_OPCOES,
     REMOVER_PENDENCIA_OPCOES,
     ATENDIMENTO_V5_TIPOS_MAP,
+    SEGUNDO_PONTO_TIPO_OPCOES,
+    SEGUNDO_PONTO_TIPO_MAP,
 )
 from modules.os_report.modelos import MODELOS_ATENDIMENTO
 from modules.os_report.report import montar_relatorio
@@ -112,6 +116,8 @@ def _mapa_opcoes(campo: dict):
         return _roteadores_options(), _roteadores_map()
     if tipo == "local_sugestao":
         return _locais_options(), _locais_map()
+    if tipo == "segundo_ponto_tipo":
+        return SEGUNDO_PONTO_TIPO_OPCOES, SEGUNDO_PONTO_TIPO_MAP
 
     return None, None
 
@@ -120,7 +126,6 @@ def _pre_campos():
     return [
         {"id": "os", "titulo": "Número da O.S.", "tipo": "os"},
         {"id": "inicio", "titulo": "Hora iniciada", "tipo": "hora"},
-        {"id": "fim", "titulo": "Hora finalizada", "tipo": "hora"},
         {"id": "tec_ext", "titulo": "Técnico externo", "tipo": "tecnico"},
         {"id": "tec_int", "titulo": "Técnico interno", "tipo": "tecnico"},
     ]
@@ -137,6 +142,7 @@ async def ajuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fluxo_ativo = update.effective_user.id in usuarios
     step = usuarios.get(update.effective_user.id, {}).get("step")
+
     await update.effective_message.reply_text(
         status_texto(fluxo_ativo, step, languagetool_ativo(), "Módulo de Atendimento"),
         parse_mode="HTML"
@@ -160,6 +166,7 @@ async def iniciar_fluxo_tipo_v5(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     tipo_nome = ATENDIMENTO_V5_TIPOS_MAP.get(tipo_codigo, "Atendimento")
+
     usuarios[update.effective_user.id] = {
         "step": "campo",
         "pending_start": None,
@@ -199,7 +206,6 @@ def _pergunta_campo(campo: dict) -> str:
     custom = {
         "os": "📌 Digite o número da O.S.:",
         "inicio": "⏰ Que horas você começou o serviço?\nExemplo: 15:30",
-        "fim": "⏰ Que horas você finalizou o serviço?\nExemplo: 18:53",
         "tec_ext": "👨‍🔧 Quem foi o técnico externo?",
         "tec_int": "🧑‍💻 Quem foi o técnico interno?",
         "cabo_wifi": "🔌 Quais equipamentos estavam no cabo e quais estavam no Wi-Fi?",
@@ -225,9 +231,11 @@ def _pergunta_campo(campo: dict) -> str:
         "pos_venda": "🤝 Foi feito o pós-venda imediato?",
         "motivo_sem_pos_venda": "✍️ Por que o pós-venda não foi feito?",
         "retirada_cabo_antigo": "🧵 Em mudança de endereço, o cabo antigo foi retirado? Se quiser, detalhe aqui.",
+        "tipo_segundo_ponto": "📍 O segundo ponto será para qual equipamento?",
         "modelo_segundo_roteador": "📡 Qual foi o modelo do roteador do segundo ponto?",
         "ssid_segundo_roteador": "📶 Qual ficou sendo o nome da rede (SSID)?",
         "senha_segundo_roteador": "🔒 Qual ficou sendo a senha?",
+        "descricao_segundo_ponto": "✍️ Informe qual equipamento será usado no segundo ponto:",
         "passagem_cabo": "🔌 Houve passagem de cabo com testes?",
         "compatibilidade_roteador": "📡 Qual modelo do roteador e ele é compatível com o plano?",
         "motivo_link_loss": "🚨 Qual foi o motivo do Link Loss e como resolveu?",
@@ -257,12 +265,13 @@ async def perguntar(message, estado: dict):
             f"<b>O.S.:</b> {dados.get('os', '-')}",
             f"<b>Tipo:</b> {dados.get('tipo_v5', '-')}",
             f"<b>Hora inicial:</b> {dados.get('inicio', '-')}",
-            f"<b>Hora final:</b> {dados.get('fim', '-')}",
+            "<b>Hora final:</b> será registrada automaticamente ao enviar",
             f"<b>Técnico externo:</b> {dados.get('tec_ext', '-')}",
             f"<b>Técnico interno:</b> {dados.get('tec_int', '-')}",
             "",
             "📨 Escolha uma opção:",
         ]
+
         await message.reply_text("\n".join(resumo), parse_mode="HTML")
         await message.reply_text(
             "✅ Enviar\n✏️ Editar etapa específica\n❌ Cancelar",
@@ -275,6 +284,7 @@ async def perguntar(message, estado: dict):
         for campo in _todos_campos_fluxo(tipo_v5, dados):
             titulo = campo.get("titulo", campo["id"])
             opcoes.append((campo["id"], titulo[:55]))
+
         await message.reply_text(
             "✏️ Selecione a etapa que deseja editar:",
             reply_markup=build_inline_keyboard("edit_os", opcoes, per_row=1)
@@ -283,7 +293,7 @@ async def perguntar(message, estado: dict):
 
     if estado["step"] == "perguntar_retirada":
         await message.reply_text(
-            "📦 Foram informados materiais utilizados ou retirados.\nDeseja gerar também o relatório de entrega no estoque?",
+            "📦 Foram informados materiais utilizados ou retirados.\nDeseja gerar também o relatório de Entrega no Estoque?",
             reply_markup=build_inline_keyboard("gerar_retirada", GERAR_RETIRADA_OPCOES)
         )
         return
@@ -337,6 +347,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if not query or query.message.chat.type != "private":
         return
+
     await query.answer()
 
     user_id = query.from_user.id
@@ -374,6 +385,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if field == "confirmar":
         if code == "enviar":
+            dados["fim"] = datetime.now().strftime("%H:%M")
+
             relatorio = montar_relatorio(dados)
             await enviar_grupo_longo(context, relatorio, query.from_user)
             salvar_historico(dados, relatorio, "Atendimento")
@@ -387,6 +400,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "✅ Relatório enviado com sucesso.\n\n"
                     f"📋 O.S.: {dados.get('os', '-')}\n"
                     f"🔧 Tipo: {dados.get('tipo_v5', '-')}\n"
+                    f"⏰ Finalizado: {dados.get('fim', '-')}\n"
                     f"👤 Técnico: {dados.get('tec_ext', '-')}"
                 )
                 await perguntar(query.message, estado)
@@ -397,6 +411,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "✅ Relatório enviado com sucesso.\n\n"
                 f"📋 O.S.: {dados.get('os', '-')}\n"
                 f"🔧 Tipo: {dados.get('tipo_v5', '-')}\n"
+                f"⏰ Finalizado: {dados.get('fim', '-')}\n"
                 f"👤 Técnico: {dados.get('tec_ext', '-')}",
                 reply_markup=ReplyKeyboardRemove()
             )
@@ -421,10 +436,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if field == "gerar_retirada":
         os_numero = dados.get("os", "-")
         usuarios.pop(user_id, None)
+
         if code == "sim":
             iniciar_fluxo_retirada_prefill(user_id, os_numero)
             await query.message.reply_text(
-                f"🏢 Iniciando relatório de entrega no estoque para a O.S. {os_numero}.",
+                f"🏢 Iniciando Entrega no Estoque para a O.S. {os_numero}.",
                 reply_markup=ReplyKeyboardRemove()
             )
         else:
@@ -442,6 +458,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             valor = _tecnicos_map().get(code, code)
         elif campo["tipo"] == "energia":
             valor = ENERGIA_MAP.get(code, code)
+        elif campo["tipo"] == "segundo_ponto_tipo":
+            valor = SEGUNDO_PONTO_TIPO_MAP.get(code, code)
         elif campo["tipo"] == "roteador_sugestao":
             valor = _roteadores_map().get(code, code)
             if valor.lower().startswith("outro"):

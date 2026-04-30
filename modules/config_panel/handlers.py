@@ -87,14 +87,26 @@ async def config_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     username = update.effective_user.username
-    if not is_config_user(username):
-        await update.effective_message.reply_text("⛔ Você não tem permissão para acessar o painel de configuração.")
+    user_id = update.effective_user.id
+
+    if not is_config_user(username, user_id):
+        await update.effective_message.reply_text(
+            "⛔ Você não tem permissão para acessar o painel de configuração.\n\n"
+            f"👤 Usuário: @{username if username else '-'}\n"
+            f"🆔 ID: {user_id}\n\n"
+            "Peça para adicionar seu usuário ou ID no app_config.json."
+        )
         return
 
-    config_sessions[update.effective_user.id] = {
+    config_sessions[user_id] = {
         "step": "senha",
     }
-    await update.effective_message.reply_text("🔐 Digite a senha de acesso ao /config:")
+
+    await update.effective_message.reply_text(
+        "🔐 Digite a senha de acesso ao /config:\n\n"
+        f"👤 Usuário: @{username if username else '-'}\n"
+        f"🆔 ID: {user_id}"
+    )
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,6 +140,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lista = add_item(lista, texto)
         _set_lista(categoria, lista)
         sess["step"] = "menu"
+
         await update.effective_message.reply_text(
             f"✅ Item adicionado em {CATEGORY_LABELS[categoria]}.",
             reply_markup=_menu_acoes(categoria)
@@ -139,6 +152,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if not query or query.message.chat.type != "private":
         return
+
     await query.answer()
 
     user_id = query.from_user.id
@@ -157,6 +171,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         categoria = code
         sess["categoria"] = categoria
         sess["step"] = "menu"
+
         await query.message.reply_text(
             f"{CATEGORY_LABELS[categoria]}\n\nEscolha uma ação:",
             reply_markup=_menu_acoes(categoria)
@@ -178,10 +193,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if acao == "listar":
             itens = _get_lista(categoria)
-            if not itens:
-                texto = "Nenhum item cadastrado."
-            else:
-                texto = "\n".join([f"• {x}" for x in itens])
+            texto = "\n".join([f"• {x}" for x in itens]) if itens else "Nenhum item cadastrado."
+
             await query.message.reply_text(
                 f"{CATEGORY_LABELS[categoria]}\n\n{texto}",
                 reply_markup=_menu_acoes(categoria)
@@ -190,16 +203,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if acao == "adicionar":
             sess["step"] = "adicionar"
-            await query.message.reply_text(f"✍️ Digite o item que deseja adicionar em {CATEGORY_LABELS[categoria]}:")
+            await query.message.reply_text(
+                f"✍️ Digite o item que deseja adicionar em {CATEGORY_LABELS[categoria]}:"
+            )
             return
 
         if acao == "remover":
             itens = _get_lista(categoria)
             if not itens:
-                await query.message.reply_text("Nenhum item para remover.", reply_markup=_menu_acoes(categoria))
+                await query.message.reply_text(
+                    "Nenhum item para remover.",
+                    reply_markup=_menu_acoes(categoria)
+                )
                 return
 
             opcoes = [(str(i), nome) for i, nome in enumerate(itens)]
+
             await query.message.reply_text(
                 f"➖ Selecione o item para remover em {CATEGORY_LABELS[categoria]}:",
                 reply_markup=build_inline_keyboard(f"config_remove_{categoria}", opcoes, per_row=1)
@@ -209,6 +228,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if field.startswith("config_remove_"):
         categoria = field.replace("config_remove_", "")
         itens = _get_lista(categoria)
+
         try:
             idx = int(code)
         except ValueError:
@@ -218,6 +238,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             removido = itens[idx]
             nova = remove_item(itens, removido)
             _set_lista(categoria, nova)
+
             await query.message.reply_text(
                 f"✅ Removido: {removido}",
                 reply_markup=_menu_acoes(categoria)

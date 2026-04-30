@@ -52,7 +52,7 @@ def _formatar_sinal(valor: str) -> str:
     if valor == "-":
         return valor
 
-    valor_limpo = valor.lower().replace("dbm", "").replace("dBm", "").strip()
+    valor_limpo = valor.lower().replace("dbm", "").strip()
     if not valor_limpo.startswith("-"):
         valor_limpo = f"-{valor_limpo}"
 
@@ -80,8 +80,10 @@ def _calcular_tempo(inicio: str, fim: str) -> str:
         h2 = datetime.strptime(fim, "%H:%M")
         delta = h2 - h1
         total_min = int(delta.total_seconds() // 60)
+
         if total_min < 0:
-            return "-"
+            total_min += 24 * 60
+
         horas = total_min // 60
         minutos = total_min % 60
         return f"{horas} h {minutos} min"
