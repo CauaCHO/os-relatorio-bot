@@ -1,0 +1,21 @@
+FLASH REPORTS v6 PRONTA
+
+Como aplicar:
+1. Extraia o conteúdo deste ZIP direto na raiz do projeto.
+2. Confirme que existem main.py, requirements.txt, core/, shared/, models/ e data/.
+3. Rode:
+
+git add .
+git commit -m "feat: v6 remasterizada"
+git push origin main
+
+Comandos:
+/start
+/assistencia
+/retirada
+/estoque
+/ausente
+/paralisada
+/pendencias
+/baixar_pendencia 123456
+/config
