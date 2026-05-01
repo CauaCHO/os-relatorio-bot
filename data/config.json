@@ -1,0 +1,102 @@
+{
+  "allowed_config_users": [
+    "GenericCHO",
+    "EstoqueFlashNetFND"
+  ],
+  "allowed_config_ids": [],
+  "config_password": "xxxxx",
+  "tecnicos": [
+    "Cauã Henrique"
+  ],
+  "roteadores": [
+    "ZTE H3601PE",
+    "ZTE H199A",
+    "Mercusys AC12G",
+    "Mercusys MR80X",
+    "TP-Link C20",
+    "TP-Link C5",
+    "TP-Link C6",
+    "Outro"
+  ],
+  "onus": [
+    "CHIMA",
+    "ALCATEL",
+    "CDATA",
+    "TP-LINK",
+    "HUAWEI",
+    "Outro"
+  ],
+  "locais": [
+    "Sala",
+    "Cozinha",
+    "Quarto",
+    "Escritório",
+    "Área externa",
+    "Outro"
+  ],
+  "energia": [
+    "Adaptador T",
+    "Filtro de linha",
+    "Tomada individual",
+    "Tomada dupla",
+    "Tomada tripla",
+    "Outro"
+  ],
+  "materiais": [
+    "Roteador",
+    "ONU",
+    "Fonte",
+    "Patchcord",
+    "Conector APC",
+    "Conector UPC",
+    "Abraçadeira",
+    "Cabo de rede",
+    "Cabo drop",
+    "Outro"
+  ],
+  "equipamentos_cliente": [
+    "Roteador",
+    "ONU",
+    "Patchcord",
+    "Fonte",
+    "TV",
+    "PC",
+    "Câmera",
+    "Outro"
+  ],
+  "solucoes": [
+    "Internet lenta - ajuste de canal e testes realizados",
+    "Sem conexão - verificação e reconfiguração dos equipamentos",
+    "Mudança de cômodo - equipamentos reposicionados e testados",
+    "Troca de roteador - equipamento substituído e configurado",
+    "Escrever manualmente"
+  ],
+  "link_loss_solucoes": [
+    "Link Loss por rompimento/dobra no cabo - reparo realizado",
+    "Sinal irregular - conector refeito e sinal normalizado",
+    "ONU sem autenticação - reconfiguração realizada",
+    "Escrever manualmente"
+  ],
+  "estoques": {
+    "Estoque FND": {
+      "cidade": "Fernandópolis",
+      "recebedores": [
+        "Cauã"
+      ]
+    },
+    "Estoque VT": {
+      "cidade": "Votuporanga",
+      "recebedores": [
+        "Giovani",
+        "Dwedinei",
+        "Leonardo"
+      ]
+    },
+    "Estoque SJRP": {
+      "cidade": "São José do Rio Preto",
+      "recebedores": [
+        "Kesli"
+      ]
+    }
+  }
+}

@@ -1,0 +1,31 @@
+FLASH REPORTS v6.5 ULTRA
+
+Inclui:
+- Todos os modelos oficiais de assistência.
+- Retirada, Estoque, Ausente, Paralisada e Pendências.
+- /config com adicionar/listar/remover técnicos, roteadores, ONU, locais, materiais, energia e textos rápidos.
+- Materiais por botão + quantidade + finalizar.
+- Campos inteligentes por botão.
+- Segundo ponto com Roteador, PC, TV, Câmera e Outro.
+- Horário final automático.
+- Integração Retirada -> Estoque.
+- Pendências com botão de baixa.
+- Relatórios enviados ao grupo com Preenchido por.
+
+Como aplicar:
+1. Extraia direto na raiz do projeto.
+2. Verifique BOT_TOKEN, CHAT_ID e CONFIG_PASSWORD no Railway.
+3. Rode:
+   git add .
+   git commit -m "feat: v6.5 ultra completa"
+   git push origin main
+
+Testes:
+- /start
+- /config
+- /assistencia
+- /retirada
+- /estoque
+- /ausente
+- /paralisada
+- /pendencias
