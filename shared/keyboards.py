@@ -19,7 +19,6 @@ MAIN_MENU = [
     ("estoque", "🏢 Estoque"),
     ("ausente", "🚫 Ausente"),
     ("paralisada", "⏸️ Paralisada"),
-    ("pendencias", "📋 Pendências"),
     ("config", "⚙️ Configurações"),
 ]
 

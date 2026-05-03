@@ -28,14 +28,22 @@ def cfg():
         "link_loss_solucoes": ["Escrever manualmente"],
         "estoques": {}
     }
+
+    # Sempre lê o JSON atualizado, garantindo sincronização entre usuários.
     data = read_json(CONFIG_FILE, default)
+
     changed = False
     for k, v in default.items():
         if k not in data:
             data[k] = v
             changed = True
+
+    # Senha operacional vem da variável do Railway.
+    data["config_password"] = CONFIG_PASSWORD
+
     if changed:
         write_json(CONFIG_FILE, data)
+
     return data
 
 
@@ -153,8 +161,13 @@ def simple_flows():
             "title": "🔧 RETIRADA DE EQUIPAMENTOS",
             "fields": [
                 {"id": "os", "label": "O.S", "type": "os", "question": "📌 Digite o número da O.S.:"},
-                {"id": "equipamentos", "label": "Equipamentos recolhidos", "type": "materials", "question": "📦 Adicione equipamentos retirados:"},
-                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Observações:"},
+                {"id": "tem_roteador", "label": "Tem roteador?", "type": "yesno", "question": "📡 Foi retirado roteador?"},
+                {"id": "roteador", "label": "Roteador retirado", "type": "choice_config", "source": "roteadores", "question": "📡 Selecione o modelo do roteador:", "condition": {"field": "tem_roteador", "equals": "Sim"}},
+                {"id": "tem_onu", "label": "Tem ONU?", "type": "yesno", "question": "🧱 Foi retirada ONU?"},
+                {"id": "onu", "label": "ONU retirada", "type": "choice_config", "source": "onus", "question": "🧱 Selecione o modelo da ONU:", "condition": {"field": "tem_onu", "equals": "Sim"}},
+                {"id": "patchcord", "label": "Patchcord retirado", "type": "yesno", "question": "🔌 Foi retirado patchcord?"},
+                {"id": "tem_obs", "label": "Há observações?", "type": "yesno", "question": "📝 Possui alguma observação?"},
+                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Digite a observação:", "condition": {"field": "tem_obs", "equals": "Sim"}},
             ],
             "mention": "@FlashNetCobranca"
         },
@@ -162,10 +175,15 @@ def simple_flows():
             "title": "📦 ENTRADA DE EQUIPAMENTOS NO ESTOQUE",
             "fields": [
                 {"id": "os", "label": "O.S", "type": "os", "question": "📌 Digite o número da O.S.:"},
-                {"id": "tipo_os", "label": "Tipo", "type": "choice_static", "options": ["Retirada", "Troca", "Cancelamento", "Outro"], "question": "🔧 Tipo da O.S.:"},
-                {"id": "equipamentos", "label": "Equipamentos recebidos", "type": "materials", "question": "📦 Adicione equipamentos recebidos:"},
+                {"id": "tipo_os", "label": "Tipo", "type": "choice_static", "options": ["Retirada (Troca)", "Retirada (Cancelamento)"], "question": "🔧 Selecione o tipo:"},
+                {"id": "tem_roteador", "label": "Tem roteador?", "type": "yesno", "question": "📡 Está entregando roteador ao estoque?"},
+                {"id": "roteador", "label": "Roteador recebido", "type": "choice_config", "source": "roteadores", "question": "📡 Selecione o modelo do roteador:", "condition": {"field": "tem_roteador", "equals": "Sim"}},
+                {"id": "tem_onu", "label": "Tem ONU?", "type": "yesno", "question": "🧱 Está entregando ONU ao estoque?"},
+                {"id": "onu", "label": "ONU recebida", "type": "choice_config", "source": "onus", "question": "🧱 Selecione o modelo da ONU:", "condition": {"field": "tem_onu", "equals": "Sim"}},
+                {"id": "patchcord", "label": "Patchcord recebido", "type": "yesno", "question": "🔌 Está entregando patchcord ao estoque?"},
                 {"id": "destino", "label": "Destino", "type": "estoque", "question": "🏢 Selecione o destino:"},
-                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Observações:"},
+                {"id": "tem_obs", "label": "Há observações?", "type": "yesno", "question": "📝 Possui alguma observação?"},
+                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Digite a observação:", "condition": {"field": "tem_obs", "equals": "Sim"}},
             ]
         },
         "ausente": {
@@ -174,7 +192,8 @@ def simple_flows():
                 {"id": "os", "label": "O.S", "type": "os", "question": "📌 Digite o número da O.S.:"},
                 {"id": "tentativas", "label": "Tentativas de contato", "type": "choice_static", "options": ["Ligação sem resposta", "WhatsApp sem resposta", "Portão fechado", "Vizinho informou ausência", "Escrever manualmente"], "question": "📞 Qual foi a tentativa principal?"},
                 {"id": "situacao", "label": "Situação", "type": "text", "question": "📌 Qual a situação atual?"},
-                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Observações:"},
+                {"id": "tem_obs", "label": "Há observações?", "type": "yesno", "question": "📝 Possui alguma observação?"},
+                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Digite a observação:", "condition": {"field": "tem_obs", "equals": "Sim"}},
             ],
             "mention": "@flashnetagendamento"
         },
@@ -184,7 +203,8 @@ def simple_flows():
                 {"id": "os", "label": "O.S", "type": "os", "question": "📌 Digite o número da O.S.:"},
                 {"id": "motivo", "label": "Motivo da paralisação", "type": "choice_static", "options": ["Cliente solicitou reagendamento", "Falta de acesso ao local", "Aguardando material", "Aguardando suporte interno", "Problema técnico", "Escrever manualmente"], "question": "⏸️ Motivo da paralisação:"},
                 {"id": "situacao", "label": "Situação atual", "type": "text", "question": "📌 Situação atual:"},
-                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Observações:"},
+                {"id": "tem_obs", "label": "Há observações?", "type": "yesno", "question": "📝 Possui alguma observação?"},
+                {"id": "obs", "label": "Observações", "type": "text", "question": "📝 Digite a observação:", "condition": {"field": "tem_obs", "equals": "Sim"}},
             ]
         }
     }
@@ -285,6 +305,18 @@ async def review(message, session):
     await message.reply_text("Escolha uma opção:", reply_markup=kb("confirm", CONFIRM_MENU, 1))
 
 
+
+def equipamentos_retirada_estoque(data):
+    itens = []
+    if data.get("tem_roteador") == "Sim" and data.get("roteador"):
+        itens.append(f"1x {data.get('roteador')}")
+    if data.get("tem_onu") == "Sim" and data.get("onu"):
+        itens.append(f"1x {data.get('onu')}")
+    if data.get("patchcord") == "Sim":
+        itens.append("1x Patchcord")
+    return "\n".join(itens) if itens else "-"
+
+
 def format_value(field, value):
     typ = field["type"]
     if typ == "materials":
@@ -318,19 +350,34 @@ def build_report(session):
             ""
         ])
 
-    for f in session["fields"]:
-        if not cond_ok(f, data):
-            continue
-        if kind == "assistencia" and f["id"] in ["os", "inicio", "tec_ext", "tec_int"]:
-            continue
-        val = format_value(f, data.get(f["id"], "-"))
-        if f["id"] == "os":
-            lines.append(f"<b>O.S:</b> {val}")
+    if kind in ["retirada", "estoque"]:
+        lines.append(f"<b>O.S:</b> {escape_html(data.get('os'))}")
+        lines.append("")
+        if kind == "estoque":
+            lines.append(f"<b>Tipo:</b> {escape_html(data.get('tipo_os'))}")
             lines.append("")
-        else:
-            lines.append(f"<b>{escape_html(f['label'])}:</b>")
-            lines.append(val)
+        titulo_eq = "Equipamentos recolhidos" if kind == "retirada" else "Equipamentos recebidos"
+        lines.append(f"<b>{titulo_eq}:</b>")
+        lines.append(escape_html(equipamentos_retirada_estoque(data)))
+        lines.append("")
+        if data.get("tem_obs") == "Sim":
+            lines.append("<b>Observações:</b>")
+            lines.append(escape_html(data.get("obs", "-")))
             lines.append("")
+    else:
+        for f in session["fields"]:
+            if not cond_ok(f, data):
+                continue
+            if kind == "assistencia" and f["id"] in ["os", "inicio", "tec_ext", "tec_int"]:
+                continue
+            val = format_value(f, data.get(f["id"], "-"))
+            if f["id"] == "os":
+                lines.append(f"<b>O.S:</b> {val}")
+                lines.append("")
+            else:
+                lines.append(f"<b>{escape_html(f['label'])}:</b>")
+                lines.append(val)
+                lines.append("")
 
     if kind == "estoque":
         dest = data.get("destino")
@@ -479,7 +526,16 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         old = session["data"]
         SESSIONS.pop(uid, None)
         if value == "Sim":
-            await start_flow(update, "estoque", {"os": old.get("os"), "equipamentos": old.get("equipamentos")})
+            await start_flow(update, "estoque", {
+                "os": old.get("os"),
+                "tem_roteador": old.get("tem_roteador"),
+                "roteador": old.get("roteador"),
+                "tem_onu": old.get("tem_onu"),
+                "onu": old.get("onu"),
+                "patchcord": old.get("patchcord"),
+                "tem_obs": old.get("tem_obs"),
+                "obs": old.get("obs"),
+            })
         else:
             await q.message.reply_text("👍 Fluxo finalizado.")
         return
