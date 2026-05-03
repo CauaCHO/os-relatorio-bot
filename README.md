@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" width="800">
+</p>
+
 # 🚀 Sistema Flash Reports v6.6
 
 ![Version](https://img.shields.io/badge/version-v6.6-blue)
