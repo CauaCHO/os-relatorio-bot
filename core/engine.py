@@ -384,6 +384,7 @@ def build_report(session):
         ecfg = cfg().get("estoques", {}).get(dest, {})
         cidade = ecfg.get("cidade", "-")
         recebedores = ", ".join(ecfg.get("recebedores", [])) or "-"
+        lines.append(f"<b>Destino:</b> {escape_html(dest)}")
         lines.append(f"<b>Recebido por:</b> {escape_html(recebedores)}")
         lines.append(f"<b>Cidade:</b> {escape_html(cidade)}")
 
