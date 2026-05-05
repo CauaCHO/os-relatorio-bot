@@ -54,14 +54,28 @@
       {
         "id": "fixacao",
         "label": "1.9 - Forma que o equipamento foi fixado",
-        "type": "text",
-        "question": "🔩 Como o equipamento foi fixado?"
+        "type": "choice_static",
+        "question": "🔩 Como ficou fixado?",
+        "options": [
+          "Sobre o móvel",
+          "Bucha e parafuso",
+          "Parede",
+          "Suporte",
+          "Outro"
+        ]
       },
       {
         "id": "config",
         "label": "1.10 - Configurações da antena e do roteador",
-        "type": "text",
-        "question": "⚙️ Informe configurações da antena e roteador:"
+        "type": "choice_static",
+        "question": "⚙️ Como ficou a configuração?",
+        "options": [
+          "Configuração padrão",
+          "Ajuste de canal Wi-Fi",
+          "Reset + reconfiguração",
+          "Troca de senha",
+          "Outro"
+        ]
       },
       {
         "id": "acesso",
@@ -157,8 +171,15 @@
       {
         "id": "config",
         "label": "1.9 - Configurações da antena e roteador",
-        "type": "text",
-        "question": "⚙️ Informe configurações:"
+        "type": "choice_static",
+        "question": "⚙️ Como ficou a configuração?",
+        "options": [
+          "Configuração padrão",
+          "Ajuste de canal Wi-Fi",
+          "Reset + reconfiguração",
+          "Troca de senha",
+          "Outro"
+        ]
       },
       {
         "id": "acesso",
@@ -261,14 +282,28 @@
       {
         "id": "fixacao",
         "label": "1.10 - Forma de fixação (roteador + ONU)",
-        "type": "text",
-        "question": "🔩 Como roteador/ONU foram fixados?"
+        "type": "choice_static",
+        "question": "🔩 Como ficou fixado?",
+        "options": [
+          "Sobre o móvel",
+          "Bucha e parafuso",
+          "Parede",
+          "Suporte",
+          "Outro"
+        ]
       },
       {
         "id": "config",
         "label": "1.11 - Configurações do roteador (LAN, DHCP, DNS, IPV6, senha)",
-        "type": "text",
-        "question": "⚙️ Informe configurações do roteador:"
+        "type": "choice_static",
+        "question": "⚙️ Como ficou a configuração?",
+        "options": [
+          "Configuração padrão",
+          "Ajuste de canal Wi-Fi",
+          "Reset + reconfiguração",
+          "Troca de senha",
+          "Outro"
+        ]
       },
       {
         "id": "acesso",
@@ -376,8 +411,15 @@
       {
         "id": "config",
         "label": "1.10 - Configurações do roteador (LAN, DHCP, DNS, IPV6)",
-        "type": "text",
-        "question": "⚙️ Informe configurações do roteador:"
+        "type": "choice_static",
+        "question": "⚙️ Como ficou a configuração?",
+        "options": [
+          "Configuração padrão",
+          "Ajuste de canal Wi-Fi",
+          "Reset + reconfiguração",
+          "Troca de senha",
+          "Outro"
+        ]
       },
       {
         "id": "acesso",
@@ -476,8 +518,15 @@
       {
         "id": "config",
         "label": "1.8 - Configurações do roteador",
-        "type": "text",
-        "question": "⚙️ Informe configurações do roteador:"
+        "type": "choice_static",
+        "question": "⚙️ Como ficou a configuração?",
+        "options": [
+          "Configuração padrão",
+          "Ajuste de canal Wi-Fi",
+          "Reset + reconfiguração",
+          "Troca de senha",
+          "Outro"
+        ]
       },
       {
         "id": "atualizados",
@@ -578,8 +627,15 @@
       {
         "id": "config",
         "label": "1.3 - Configuração dos roteadores (primeiro e segundo ponto)",
-        "type": "text",
-        "question": "⚙️ Como ficaram as configurações?"
+        "type": "choice_static",
+        "question": "⚙️ Como ficou a configuração?",
+        "options": [
+          "Configuração padrão",
+          "Ajuste de canal Wi-Fi",
+          "Reset + reconfiguração",
+          "Troca de senha",
+          "Outro"
+        ]
       },
       {
         "id": "cabo",
@@ -620,8 +676,15 @@
       {
         "id": "fixacao",
         "label": "1.10 - Forma de fixação do equipamento",
-        "type": "text",
-        "question": "🔩 Como ficou fixado?"
+        "type": "choice_static",
+        "question": "🔩 Como ficou fixado?",
+        "options": [
+          "Sobre o móvel",
+          "Bucha e parafuso",
+          "Parede",
+          "Suporte",
+          "Outro"
+        ]
       },
       {
         "id": "atualizados",

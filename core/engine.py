@@ -23,6 +23,7 @@ def cfg():
         "locais": ["Outro"],
         "energia": ["Outro"],
         "materiais": ["Outro"],
+        "conectores": ["Conector APC", "Conector UPC", "Adaptador APC", "Adaptador UPC", "Outro"],
         "equipamentos_cliente": ["Outro"],
         "solucoes": ["Escrever manualmente"],
         "link_loss_solucoes": ["Escrever manualmente"],
@@ -61,6 +62,47 @@ async def send_group(context, text, user):
     full = f"👤 <b>Preenchido por:</b> {escape_html(user_name(user))}\n\n{text}"
     for i in range(0, len(full), 3900):
         await context.bot.send_message(chat_id=CHAT_ID, text=full[i:i+3900], parse_mode="HTML")
+
+
+def track_bot_message(session, msg):
+    if session is not None and msg is not None:
+        session.setdefault("bot_message_ids", [])
+        if msg.message_id not in session["bot_message_ids"]:
+            session["bot_message_ids"].append(msg.message_id)
+
+
+async def send_flow_message(message, session, text, **kwargs):
+    msg = await message.reply_text(text, **kwargs)
+    track_bot_message(session, msg)
+    return msg
+
+
+async def delete_flow_messages(context, chat_id, session):
+    for msg_id in session.get("bot_message_ids", []):
+        try:
+            await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+        except Exception:
+            pass
+
+
+def material_preview(session):
+    materiais = session.get("materials_temp", [])
+    if not materiais:
+        return "📋 <b>Prévia dos materiais:</b>\nNenhum material adicionado."
+    linhas = ["📋 <b>Prévia dos materiais:</b>", ""]
+    for m in materiais:
+        linhas.append(f"• {escape_html(str(m.get('qty', 1)))}x {escape_html(str(m.get('name', '-')))}")
+    return "\n".join(linhas)
+
+
+def material_source_items(c, source):
+    if source == "roteadores":
+        return c.get("roteadores", [])
+    if source == "onus":
+        return c.get("onus", [])
+    if source == "conectores":
+        return c.get("conectores", ["Conector APC", "Conector UPC", "Adaptador APC", "Adaptador UPC", "Outro"])
+    return c.get("materiais", [])
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -221,18 +263,25 @@ async def start_assist(update, code):
             {"id": "inicio", "label": "Hora iniciada", "type": "hour", "question": "⏰ Que horas começou? Exemplo: 15:30"},
             {"id": "tec_ext", "label": "Técnico externo", "type": "choice_config", "source": "tecnicos", "question": "👨‍🔧 Técnico externo:"},
             {"id": "tec_int", "label": "Técnico interno", "type": "choice_config", "source": "tecnicos", "question": "🧑‍💻 Técnico interno:"},
+            {"id": "roteador_principal", "label": "Roteador principal", "type": "choice_static", "options": ["Comodato", "Próprio"], "question": "📡 O roteador principal é:"},
+            {"id": "roteador_segundo", "label": "Roteador do segundo ponto", "type": "choice_static", "options": ["Comodato", "Próprio", "Locação", "Não possui"], "question": "📶 Roteador do segundo ponto:"},
         ] + model["fields"],
         "index": 0,
         "data": {},
         "materials_temp": [],
+        "bot_message_ids": [],
     }
+    if getattr(update, "callback_query", None) and update.callback_query.message:
+        track_bot_message(session, update.callback_query.message)
     SESSIONS[update.effective_user.id] = session
     await ask(update.effective_message, session)
 
 
 async def start_flow(update, name, prefill=None):
     f = simple_flows()[name]
-    session = {"mode": "flow", "kind": name, "title": f["title"], "fields": f["fields"], "mention": f.get("mention"), "index": 0, "data": prefill or {}, "materials_temp": []}
+    session = {"mode": "flow", "kind": name, "title": f["title"], "fields": f["fields"], "mention": f.get("mention"), "index": 0, "data": prefill or {}, "materials_temp": [], "bot_message_ids": []}
+    if getattr(update, "callback_query", None) and update.callback_query.message:
+        track_bot_message(session, update.callback_query.message)
     SESSIONS[update.effective_user.id] = session
     await ask(update.effective_message, session)
 
@@ -263,34 +312,62 @@ async def ask(message, session):
     c = cfg()
 
     if typ == "yesno":
-        await message.reply_text(field["question"], reply_markup=kb("ans", YES_NO, 2))
+        await send_flow_message(message, session, field["question"], reply_markup=kb("ans", YES_NO, 2))
     elif typ == "second_point":
-        await message.reply_text(field["question"], reply_markup=kb("ans", SECOND_POINT, 2))
+        await send_flow_message(message, session, field["question"], reply_markup=kb("ans", SECOND_POINT, 2))
     elif typ == "choice_config":
         opts = [(x, x) for x in c.get(field["source"], [])]
         opts.append(("__manual__", "➕ Outro / manual"))
-        await message.reply_text(field["question"], reply_markup=kb("ans", opts, 1))
+        await send_flow_message(message, session, field["question"], reply_markup=kb("ans", opts, 1))
     elif typ == "choice_static":
         opts = [(x, x) for x in field.get("options", [])]
-        await message.reply_text(field["question"], reply_markup=kb("ans", opts, 1))
+        await send_flow_message(message, session, field["question"], reply_markup=kb("ans", opts, 1))
     elif typ == "preset_text":
         opts = [(x, x[:55]) for x in c.get(field["source"], ["Escrever manualmente"])]
-        await message.reply_text(field["question"], reply_markup=kb("ans", opts, 1))
+        await send_flow_message(message, session, field["question"], reply_markup=kb("ans", opts, 1))
     elif typ == "estoque":
         opts = [(x, x) for x in c.get("estoques", {}).keys()]
-        await message.reply_text(field["question"], reply_markup=kb("ans", opts, 1))
+        await send_flow_message(message, session, field["question"], reply_markup=kb("ans", opts, 1))
     elif typ == "materials":
         await materials_menu(message, session)
     else:
-        await message.reply_text(field["question"], reply_markup=ReplyKeyboardRemove())
+        await send_flow_message(message, session, field["question"], reply_markup=ReplyKeyboardRemove())
 
 
 async def materials_menu(message, session):
+    opts = [
+        ("cat:roteadores", "📡 Roteadores"),
+        ("cat:onus", "🧱 ONU/ONT"),
+        ("cat:conectores", "🔌 Conectores"),
+        ("cat:materiais", "📦 Materiais gerais"),
+        ("__manual__", "➕ Outro / manual"),
+        ("__finish__", "✅ Finalizar materiais"),
+    ]
+    text = f"📦 <b>Materiais utilizados/retirados</b>\n\n{material_preview(session)}\n\nSelecione uma categoria:"
+    await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 1))
+
+
+async def materials_category_menu(message, session, source):
     c = cfg()
-    opts = [(x, x) for x in c.get("materiais", [])]
-    opts.append(("__manual__", "➕ Outro / manual"))
-    opts.append(("__finish__", "✅ Finalizar materiais"))
-    await message.reply_text("📦 Selecione um material:", reply_markup=kb("mat", opts, 1))
+    items = material_source_items(c, source)
+    opts = [(f"item:{x}", x) for x in items]
+    opts.append(("back", "⬅️ Voltar"))
+    session["material_source"] = source
+    await send_flow_message(message, session, "📦 Selecione o material:", reply_markup=kb("mat", opts, 1))
+
+
+async def material_qty_menu(message, session):
+    name = session.get("material_name", "-")
+    qty = session.get("material_qty", 1)
+    opts = [
+        ("qty:-", "➖"),
+        ("noop", str(qty)),
+        ("qty:+", "➕"),
+        ("add_selected", "✅ Adicionar"),
+        ("back", "⬅️ Voltar"),
+    ]
+    text = f"📦 Material: <b>{escape_html(name)}</b>\nQuantidade: <b>{qty}</b>\n\n{material_preview(session)}"
+    await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 3))
 
 
 async def review(message, session):
@@ -301,8 +378,8 @@ async def review(message, session):
             continue
         val = session["data"].get(f["id"], "-")
         lines.append(f"<b>{escape_html(f['label'])}:</b> {escape_html(val)}")
-    await message.reply_text("\n".join(lines), parse_mode="HTML")
-    await message.reply_text("Escolha uma opção:", reply_markup=kb("confirm", CONFIRM_MENU, 1))
+    await send_flow_message(message, session, "\n".join(lines), parse_mode="HTML")
+    await send_flow_message(message, session, "Escolha uma opção:", reply_markup=kb("confirm", CONFIRM_MENU, 1))
 
 
 
@@ -385,6 +462,7 @@ def build_report(session):
         cidade = ecfg.get("cidade", "-")
         recebedores = ", ".join(ecfg.get("recebedores", [])) or "-"
         lines.append(f"<b>Destino:</b> {escape_html(dest)}")
+        lines.append("")
         lines.append(f"<b>Recebido por:</b> {escape_html(recebedores)}")
         lines.append(f"<b>Cidade:</b> {escape_html(cidade)}")
 
@@ -411,13 +489,16 @@ async def finalize(update, context, session):
 
     uid = update.effective_user.id
 
+    await delete_flow_messages(context, update.effective_chat.id, session)
+
     if session["kind"] == "retirada":
         session["after_retirada"] = True
-        await update.effective_message.reply_text("✅ Relatório enviado.\n\nDeseja gerar entrada no estoque?", reply_markup=kb("after_ret", YES_NO, 2))
+        msg = await update.effective_message.reply_text("✅ Relatório enviado.\n\nDeseja gerar entrada no estoque?", reply_markup=kb("after_ret", YES_NO, 2))
+        track_bot_message(session, msg)
         return
 
     SESSIONS.pop(uid, None)
-    await update.effective_message.reply_text("✅ Relatório enviado com sucesso.")
+    await update.effective_message.reply_text("✅ Relatório enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
 
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -476,9 +557,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         field = current_field(session)
         if not field:
             return
-        if value == "__manual__" or value == "Escrever manualmente":
+        if value in ["__manual__", "Escrever manualmente", "Outro"]:
             session["manual_field"] = field
-            await q.message.reply_text("✍️ Digite manualmente:")
+            msg = await q.message.reply_text("✍️ Digite manualmente:")
+            track_bot_message(session, msg)
             return
 
         session["data"][field["id"]] = value
@@ -492,29 +574,62 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             materiais = session.get("materials_temp", [])
             session["data"][field["id"]] = "\n".join([f"{m['qty']}x {m['name']}" for m in materiais]) if materiais else "-"
             session["materials_temp"] = []
+            session.pop("material_name", None)
+            session.pop("material_qty", None)
+            session.pop("material_source", None)
             session["index"] += 1
             await ask(q.message, session)
             return
+        if value == "back":
+            session.pop("material_name", None)
+            session.pop("material_qty", None)
+            await materials_menu(q.message, session)
+            return
         if value == "__manual__":
             session["material_manual"] = True
-            await q.message.reply_text("✍️ Digite o nome do material:")
+            msg = await q.message.reply_text("✍️ Digite o nome do material:")
+            track_bot_message(session, msg)
             return
-        session["material_name"] = value
-        await q.message.reply_text(f"Quantidade de {value}?")
-        return
+        if value.startswith("cat:"):
+            await materials_category_menu(q.message, session, value.split(":", 1)[1])
+            return
+        if value.startswith("item:"):
+            session["material_name"] = value.split(":", 1)[1]
+            session["material_qty"] = 1
+            await material_qty_menu(q.message, session)
+            return
+        if value == "qty:+":
+            session["material_qty"] = int(session.get("material_qty", 1)) + 1
+            await material_qty_menu(q.message, session)
+            return
+        if value == "qty:-":
+            session["material_qty"] = max(1, int(session.get("material_qty", 1)) - 1)
+            await material_qty_menu(q.message, session)
+            return
+        if value == "add_selected":
+            name = session.get("material_name")
+            qty = int(session.get("material_qty", 1))
+            if name:
+                session.setdefault("materials_temp", []).append({"name": name, "qty": qty})
+            session.pop("material_name", None)
+            session.pop("material_qty", None)
+            await materials_menu(q.message, session)
+            return
+        if value == "noop":
+            return
 
     if prefix == "confirm":
         if value == "enviar":
             await finalize(update, context, session)
         elif value == "cancelar":
             SESSIONS.pop(uid, None)
-            await q.message.reply_text("❌ Fluxo cancelado.")
+            await q.message.reply_text("❌ Fluxo cancelado.", reply_markup=ReplyKeyboardRemove())
         elif value == "editar":
             opts = []
             for i, f in enumerate(session["fields"]):
                 if cond_ok(f, session["data"]):
                     opts.append((str(i), f["label"][:55]))
-            await q.message.reply_text("✏️ Escolha a etapa para editar:", reply_markup=kb("edit", opts, 1))
+            await send_flow_message(q.message, session, "✏️ Escolha a etapa para editar:", reply_markup=kb("edit", opts, 1))
         return
 
     if prefix == "edit":
@@ -538,7 +653,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "obs": old.get("obs"),
             })
         else:
-            await q.message.reply_text("👍 Fluxo finalizado.")
+            await q.message.reply_text("👍 Fluxo finalizado.", reply_markup=ReplyKeyboardRemove())
         return
 
 
@@ -558,7 +673,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if session.get("material_manual"):
         session["material_manual"] = False
         session["material_name"] = text
-        await update.effective_message.reply_text(f"Quantidade de {text}?")
+        session["material_qty"] = 1
+        await material_qty_menu(update.effective_message, session)
         return
 
     if session.get("material_name"):
@@ -568,7 +684,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.effective_message.reply_text("⚠️ Digite apenas o número da quantidade.")
             return
         session.setdefault("materials_temp", []).append({"name": session.pop("material_name"), "qty": qty})
-        await update.effective_message.reply_text("✅ Material adicionado.")
+        await send_flow_message(update.effective_message, session, "✅ Material adicionado.")
         await materials_menu(update.effective_message, session)
         return
 
@@ -648,6 +764,7 @@ async def show_config_menu(message):
         ("onus", "🧱 ONU/ONT"),
         ("locais", "📍 Locais"),
         ("materiais", "🔌 Materiais"),
+        ("conectores", "🔌 Conectores"),
         ("energia", "🔋 Energia"),
         ("solucoes", "🛠️ Textos rápidos"),
         ("estoques", "🏢 Estoques"),
