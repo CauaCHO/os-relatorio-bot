@@ -71,14 +71,47 @@ def track_bot_message(session, msg):
             session["bot_message_ids"].append(msg.message_id)
 
 
+def track_user_message(session, msg):
+    if session is not None and msg is not None:
+        session.setdefault("user_message_ids", [])
+        if msg.message_id not in session["user_message_ids"]:
+            session["user_message_ids"].append(msg.message_id)
+
+
 async def send_flow_message(message, session, text, **kwargs):
     msg = await message.reply_text(text, **kwargs)
     track_bot_message(session, msg)
     return msg
 
 
+async def edit_flow_message(message, session, text, **kwargs):
+    try:
+        await message.edit_text(text, **kwargs)
+        track_bot_message(session, message)
+        return message
+    except Exception:
+        return await send_flow_message(message, session, text, **kwargs)
+
+
+async def remove_message_keyboard(message):
+    try:
+        await message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+
 async def delete_flow_messages(context, chat_id, session):
-    for msg_id in session.get("bot_message_ids", []):
+    ids = []
+    ids.extend(session.get("user_message_ids", []))
+    ids.extend(session.get("bot_message_ids", []))
+
+    # Remove duplicados preservando a ordem.
+    unique_ids = []
+    for msg_id in ids:
+        if msg_id not in unique_ids:
+            unique_ids.append(msg_id)
+
+    for msg_id in unique_ids:
         try:
             await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
         except Exception:
@@ -270,6 +303,7 @@ async def start_assist(update, code):
         "data": {},
         "materials_temp": [],
         "bot_message_ids": [],
+        "user_message_ids": [],
     }
     if getattr(update, "callback_query", None) and update.callback_query.message:
         track_bot_message(session, update.callback_query.message)
@@ -277,9 +311,20 @@ async def start_assist(update, code):
     await ask(update.effective_message, session)
 
 
-async def start_flow(update, name, prefill=None):
+async def start_flow(update, name, prefill=None, cleanup=None):
     f = simple_flows()[name]
-    session = {"mode": "flow", "kind": name, "title": f["title"], "fields": f["fields"], "mention": f.get("mention"), "index": 0, "data": prefill or {}, "materials_temp": [], "bot_message_ids": []}
+    session = {
+        "mode": "flow",
+        "kind": name,
+        "title": f["title"],
+        "fields": f["fields"],
+        "mention": f.get("mention"),
+        "index": 0,
+        "data": prefill or {},
+        "materials_temp": [],
+        "bot_message_ids": list((cleanup or {}).get("bot_message_ids", [])),
+        "user_message_ids": list((cleanup or {}).get("user_message_ids", [])),
+    }
     if getattr(update, "callback_query", None) and update.callback_query.message:
         track_bot_message(session, update.callback_query.message)
     SESSIONS[update.effective_user.id] = session
@@ -334,7 +379,7 @@ async def ask(message, session):
         await send_flow_message(message, session, field["question"], reply_markup=ReplyKeyboardRemove())
 
 
-async def materials_menu(message, session):
+async def materials_menu(message, session, edit=False):
     opts = [
         ("cat:roteadores", "📡 Roteadores"),
         ("cat:onus", "🧱 ONU/ONT"),
@@ -344,19 +389,36 @@ async def materials_menu(message, session):
         ("__finish__", "✅ Finalizar materiais"),
     ]
     text = f"📦 <b>Materiais utilizados/retirados</b>\n\n{material_preview(session)}\n\nSelecione uma categoria:"
-    await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 1))
+    if edit:
+        await edit_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 1))
+    else:
+        await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 1))
 
 
-async def materials_category_menu(message, session, source):
+async def materials_category_menu(message, session, source, edit=False):
     c = cfg()
     items = material_source_items(c, source)
-    opts = [(f"item:{x}", x) for x in items]
+    opts = [(f"item:{x}", x) for x in items if x]
     opts.append(("back", "⬅️ Voltar"))
     session["material_source"] = source
-    await send_flow_message(message, session, "📦 Selecione o material:", reply_markup=kb("mat", opts, 1))
+
+    if source == "roteadores":
+        title = "📡 Roteadores"
+    elif source == "onus":
+        title = "🧱 ONU/ONT"
+    elif source == "conectores":
+        title = "🔌 Conectores"
+    else:
+        title = "📦 Materiais gerais"
+
+    text = f"{title}\n\n{material_preview(session)}\n\nSelecione o material:"
+    if edit:
+        await edit_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 1))
+    else:
+        await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 1))
 
 
-async def material_qty_menu(message, session):
+async def material_qty_menu(message, session, edit=False):
     name = session.get("material_name", "-")
     qty = session.get("material_qty", 1)
     opts = [
@@ -364,10 +426,17 @@ async def material_qty_menu(message, session):
         ("noop", str(qty)),
         ("qty:+", "➕"),
         ("add_selected", "✅ Adicionar"),
-        ("back", "⬅️ Voltar"),
+        ("back_items", "⬅️ Voltar"),
     ]
-    text = f"📦 Material: <b>{escape_html(name)}</b>\nQuantidade: <b>{qty}</b>\n\n{material_preview(session)}"
-    await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 3))
+    text = (
+        f"📦 Material: <b>{escape_html(name)}</b>\n"
+        f"Quantidade: <b>{qty}</b>\n\n"
+        f"{material_preview(session)}"
+    )
+    if edit:
+        await edit_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 3))
+    else:
+        await send_flow_message(message, session, text, parse_mode="HTML", reply_markup=kb("mat", opts, 3))
 
 
 async def review(message, session):
@@ -489,14 +558,16 @@ async def finalize(update, context, session):
 
     uid = update.effective_user.id
 
-    await delete_flow_messages(context, update.effective_chat.id, session)
-
     if session["kind"] == "retirada":
         session["after_retirada"] = True
-        msg = await update.effective_message.reply_text("✅ Relatório enviado.\n\nDeseja gerar entrada no estoque?", reply_markup=kb("after_ret", YES_NO, 2))
+        msg = await update.effective_message.reply_text(
+            "✅ Relatório de retirada enviado.\n\nDeseja gerar entrada no estoque?",
+            reply_markup=kb("after_ret", YES_NO, 2)
+        )
         track_bot_message(session, msg)
         return
 
+    await delete_flow_messages(context, update.effective_chat.id, session)
     SESSIONS.pop(uid, None)
     await update.effective_message.reply_text("✅ Relatório enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
 
@@ -510,6 +581,11 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prefix, value = q.data.split("|", 1)
     except ValueError:
         return
+
+    # Remove os botões antigos na maioria dos fluxos.
+    # Materiais usam edição da própria mensagem, então continuam com botões ativos.
+    if prefix not in ["mat"] and not prefix.startswith("cfg"):
+        await remove_message_keyboard(q.message)
 
     if prefix == "menu":
         if value == "assistencias":
@@ -577,35 +653,51 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.pop("material_name", None)
             session.pop("material_qty", None)
             session.pop("material_source", None)
+            await remove_message_keyboard(q.message)
             session["index"] += 1
             await ask(q.message, session)
             return
+
         if value == "back":
             session.pop("material_name", None)
             session.pop("material_qty", None)
-            await materials_menu(q.message, session)
+            await materials_menu(q.message, session, edit=True)
             return
+
+        if value == "back_items":
+            source = session.get("material_source", "materiais")
+            session.pop("material_name", None)
+            session.pop("material_qty", None)
+            await materials_category_menu(q.message, session, source, edit=True)
+            return
+
         if value == "__manual__":
             session["material_manual"] = True
+            await remove_message_keyboard(q.message)
             msg = await q.message.reply_text("✍️ Digite o nome do material:")
             track_bot_message(session, msg)
             return
+
         if value.startswith("cat:"):
-            await materials_category_menu(q.message, session, value.split(":", 1)[1])
+            await materials_category_menu(q.message, session, value.split(":", 1)[1], edit=True)
             return
+
         if value.startswith("item:"):
             session["material_name"] = value.split(":", 1)[1]
             session["material_qty"] = 1
-            await material_qty_menu(q.message, session)
+            await material_qty_menu(q.message, session, edit=True)
             return
+
         if value == "qty:+":
             session["material_qty"] = int(session.get("material_qty", 1)) + 1
-            await material_qty_menu(q.message, session)
+            await material_qty_menu(q.message, session, edit=True)
             return
+
         if value == "qty:-":
             session["material_qty"] = max(1, int(session.get("material_qty", 1)) - 1)
-            await material_qty_menu(q.message, session)
+            await material_qty_menu(q.message, session, edit=True)
             return
+
         if value == "add_selected":
             name = session.get("material_name")
             qty = int(session.get("material_qty", 1))
@@ -613,8 +705,9 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 session.setdefault("materials_temp", []).append({"name": name, "qty": qty})
             session.pop("material_name", None)
             session.pop("material_qty", None)
-            await materials_menu(q.message, session)
+            await materials_menu(q.message, session, edit=True)
             return
+
         if value == "noop":
             return
 
@@ -622,6 +715,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if value == "enviar":
             await finalize(update, context, session)
         elif value == "cancelar":
+            await delete_flow_messages(context, update.effective_chat.id, session)
             SESSIONS.pop(uid, None)
             await q.message.reply_text("❌ Fluxo cancelado.", reply_markup=ReplyKeyboardRemove())
         elif value == "editar":
@@ -640,6 +734,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if prefix == "after_ret":
         old = session["data"]
+        cleanup = {
+            "bot_message_ids": list(session.get("bot_message_ids", [])),
+            "user_message_ids": list(session.get("user_message_ids", [])),
+        }
         SESSIONS.pop(uid, None)
         if value == "Sim":
             await start_flow(update, "estoque", {
@@ -651,9 +749,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "patchcord": old.get("patchcord"),
                 "tem_obs": old.get("tem_obs"),
                 "obs": old.get("obs"),
-            })
+            }, cleanup=cleanup)
         else:
-            await q.message.reply_text("👍 Fluxo finalizado.", reply_markup=ReplyKeyboardRemove())
+            await delete_flow_messages(context, update.effective_chat.id, session)
+            await q.message.reply_text("✅ Relatório enviado com sucesso.", reply_markup=ReplyKeyboardRemove())
         return
 
 
@@ -670,6 +769,9 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await config_message(update, text)
         return
 
+    # Guarda as respostas digitadas pelo usuário para limpar o atendimento ao finalizar.
+    track_user_message(session, update.effective_message)
+
     if session.get("material_manual"):
         session["material_manual"] = False
         session["material_name"] = text
@@ -681,9 +783,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             qty = int(text)
         except ValueError:
-            await update.effective_message.reply_text("⚠️ Digite apenas o número da quantidade.")
+            await send_flow_message(update.effective_message, session, "⚠️ Use os botões ➖ e ➕ ou digite apenas o número da quantidade.")
             return
         session.setdefault("materials_temp", []).append({"name": session.pop("material_name"), "qty": qty})
+        session.pop("material_qty", None)
         await send_flow_message(update.effective_message, session, "✅ Material adicionado.")
         await materials_menu(update.effective_message, session)
         return
@@ -702,10 +805,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     typ = field["type"]
 
     if typ == "os" and not text.isdigit():
-        await update.effective_message.reply_text("⚠️ Digite apenas números para a O.S.")
+        await send_flow_message(update.effective_message, session, "⚠️ Digite apenas números para a O.S.")
         return
     if typ == "hour" and not valid_hour(text):
-        await update.effective_message.reply_text("⚠️ Hora inválida. Use HH:MM. Exemplo: 15:30")
+        await send_flow_message(update.effective_message, session, "⚠️ Hora inválida. Use HH:MM. Exemplo: 15:30")
         return
     if typ == "materials":
         session["data"][field["id"]] = format_materials_free(text)
