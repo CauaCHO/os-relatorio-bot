@@ -2,9 +2,9 @@
   <img src="assets/banner.png" width="800">
 </p>
 
-# 🚀 Sistema Flash Reports v6.6
+# 🚀 Sistema Flash Reports v8
 
-![Version](https://img.shields.io/badge/version-v6.6-blue)
+![Version](https://img.shields.io/badge/version-v8-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-green)
 ![Telegram Bot](https://img.shields.io/badge/bot-Telegram-blue)
 ![Status](https://img.shields.io/badge/status-ativo-success)
@@ -23,15 +23,15 @@ Sistema automatizado de geração de relatórios de O.S. via Telegram, desenvolv
 
 ---
 
-## 🧠 Remasterização v6.6
+## 🧠 Evolução até a v8
 
-A versão v6.6 é uma evolução direta da v6.5, com foco em:
+A versão v8 é uma evolução direta das versões anteriores, com foco em:
 
-✔ Fluxos mais inteligentes
-✔ Padronização de equipamentos
-✔ Interface mais limpa
-✔ Correção de inconsistências
-✔ Sincronização real do sistema
+✔ Padronização completa dos dados  
+✔ Interface interativa (menos chat, mais sistema)  
+✔ Redução extrema de digitação  
+✔ Melhor experiência do técnico  
+✔ Fluxo automatizado e limpo  
 
 ---
 
@@ -44,59 +44,109 @@ A versão v6.6 é uma evolução direta da v6.5, com foco em:
 * 🏢 Estoque
 * 🚫 Cliente ausente
 * ⏸️ O.S. paralisada
-* 📋 Pendências (via comando ou paralisada)
+* 📋 Pendências
 
 ---
 
-## 📡 Assistências
+## 📡 Assistências (v7)
 
 * Modelos completos (rádio, fibra, segundo ponto, etc.)
 * Campos inteligentes e condicionais
-* Sugestões de respostas
-* Relatório final padronizado
+* Padronização com botões
+* Relatório final estruturado
+
+### 🔧 Novidades v7
+
+* Tipo de roteador principal:
+  * Comodato
+  * Próprio (Cliente)
+
+* Tipo de roteador do segundo ponto:
+  * Comodato
+  * Próprio (Cliente)
+  * Locação
+  * Não possui
+
+* Fixação com botões:
+  * Sobre o móvel
+  * Bucha e parafuso
+  * Parede
+  * Suporte
+  * Outro
+
+* Configuração com botões:
+  * Configuração padrão
+  * Ajuste de Wi-Fi
+  * Reset + reconfiguração
+  * Troca de senha
+  * Outro
 
 ---
 
-## 📦 Retirada (v6.6)
+## 📦 Sistema de Materiais (v8)
 
-Novo fluxo guiado:
+Fluxo completamente reformulado:
 
-* Pergunta se há roteador
-* Se sim → lista modelos cadastrados
-* Pergunta se há ONU
-* Se sim → lista modelos cadastrados
-* Pergunta se há patchcord
-* Observação com botão Sim/Não
+* Seleção por categoria
+* Seleção por subcategoria (modelo/tipo)
+* Controle de quantidade com botões
+* Prévia em tempo real dos materiais adicionados
 
-Resultado:
+Exemplo:
 
-```text
-1x Roteador X
-1x ONU Y
-1x Patchcord
-```
+📦 Materiais adicionados:
+1x TP-Link AX3000
+2x Conector APC
 
 ---
 
-## 🏢 Estoque (v6.6)
+## ➕ Quantidade interativa (v8)
+
+[ - ] 1 [ + ]  
+[ Adicionar ]
+
+* Sem digitação  
+* Resposta instantânea  
+* Mais precisão  
+
+---
+
+## 🧹 Limpeza automática do atendimento (v8)
+
+Após finalizar um relatório:
+
+* Todas as mensagens do fluxo são removidas  
+* Perguntas e respostas são apagadas  
+* Botões antigos desaparecem  
+
+Mantém apenas:
+
+/start  
+Relatório enviado com sucesso  
+
+---
+
+## 📦 Retirada
+
+Fluxo guiado:
+
+* Pergunta sobre roteador  
+* Lista modelos cadastrados  
+* Pergunta sobre ONU  
+* Pergunta sobre patchcord  
+* Observação com botão  
+
+---
+
+## 🏢 Estoque
 
 Fluxo padronizado:
 
-* Tipo:
-
-  * Retirada (Troca)
-  * Retirada (Cancelamento)
-
-* Equipamentos:
-
-  * Roteador (se houver)
-  * ONU (se houver)
-  * Patchcord
-
-* Observação opcional
-
-✔ Mesmo padrão da retirada
-✔ Mais controle de entrada
+* Tipo de retirada  
+* Equipamentos recebidos  
+* Destino automático  
+* Recebedor  
+* Cidade  
 
 ---
 
@@ -104,177 +154,132 @@ Fluxo padronizado:
 
 Após finalizar retirada:
 
-```text
 Deseja gerar entrada no estoque?
-```
 
-Se SIM:
-
-* Dados são reaproveitados automaticamente
-* Fluxo continua no estoque
-
----
-
-## 📦 Sistema de equipamentos
-
-Agora padronizado:
-
-* Seleção via botão
-* Evita digitação errada
-* Usa dados do `/config`
-
----
-
-## 🧾 Relatórios
-
-* Estrutura formal automática
-* Organização por seção
-* Padronização completa
-* Envio direto ao grupo
-
-Inclui:
-
-```text
-Início
-Fim automático
-Tempo gasto
-Técnicos
-Equipamentos
-```
-
----
-
-## ⏱️ Tempo automático
-
-* Técnico informa apenas início
-* Final automático
-* Tempo calculado
+* Dados reaproveitados automaticamente  
+* Continuidade do fluxo  
 
 ---
 
 ## 📋 Pendências
 
-* Registro automático de:
+Registro automático de:
 
-  * O.S. paralisada
-  * Cliente ausente
+* O.S. paralisada  
+* Cliente ausente  
 
 ### Comandos:
 
-```bash
-/pendencias
-/baixar_pendencia 123456
-```
+/pendencias  
+/baixar_pendencia 123456  
 
 ---
 
-## ⚙️ /config (corrigido v6.6)
+## ⚙️ /config
 
-Agora sincronizado corretamente entre usuários.
+Gerencia:
 
-### Gerencia:
+* Técnicos  
+* Roteadores  
+* ONU  
+* Locais  
+* Materiais  
+* Energia  
+* Textos rápidos  
+* Estoques  
 
-* 👨‍🔧 Técnicos
-* 📡 Roteadores
-* 🧱 ONU
-* 📍 Locais
-* 🔌 Materiais
-* 🔋 Energia
-* 🛠️ Textos rápidos
-* 🏢 Estoques
-
----
-
-### Correção importante
-
-✔ Agora todos usuários veem as mesmas alterações
-✔ Não há mais inconsistência entre contas
+✔ Sincronizado entre todos usuários  
 
 ---
 
-## 🧹 Melhorias da v6.6
+## 🧾 Relatórios
 
-* Removido botão duplicado de pendências do `/start`
-* Retirada mais inteligente
-* Estoque mais padronizado
-* Observações com controle Sim/Não
-* Sincronização do config corrigida
-* Fluxo mais limpo
+* Estrutura formal automática  
+* Organização por seções  
+* Dados padronizados  
+* Envio direto ao grupo  
+
+Inclui:
+
+Início  
+Fim automático  
+Tempo gasto  
+Técnicos  
+Equipamentos  
+Materiais  
+
+---
+
+## ⏱️ Tempo automático
+
+* Técnico informa apenas início  
+* Final automático  
+* Tempo calculado automaticamente  
 
 ---
 
 ## 📂 Estrutura
 
-```
-core/
-shared/
-models/
-data/
+core/  
+shared/  
+models/  
+data/  
 
-main.py
-config.py
-requirements.txt
-README.md
-```
+main.py  
+config.py  
+requirements.txt  
+README.md  
 
 ---
 
-## 🔐 Variáveis (Railway)
+## 🔐 Variáveis
 
-```
-BOT_TOKEN=SEU_TOKEN
-CHAT_ID=ID_DO_GRUPO
-CONFIG_PASSWORD=SENHA
-```
+BOT_TOKEN=SEU_TOKEN  
+CHAT_ID=ID_DO_GRUPO  
+CONFIG_PASSWORD=SENHA  
 
 ---
 
 ## 🚀 Deploy
 
-```bash
-git add .
-git commit -m "feat: v6.6"
-git push origin main
-```
+git add .  
+git commit -m "feat: v8"  
+git push origin main  
 
 ---
 
 ## 🧪 Comandos
 
-```
-/start
-/assistencia
-/retirada
-/estoque
-/ausente
-/paralisada
-/pendencias
-/baixar_pendencia
-/config
-```
+/start  
+/assistencia  
+/retirada  
+/estoque  
+/ausente  
+/paralisada  
+/pendencias  
+/baixar_pendencia  
+/config  
 
 ---
 
 ## 🔮 Próximos passos
 
-* Dashboard web
-* Estatísticas de atendimento
-* Integração com MK/Auth
-* Histórico por O.S.
-* Relatórios automáticos
+* Motor inteligente (padronização automática de textos)  
+* Dashboard web  
+* Estatísticas de atendimento  
+* Histórico por O.S.  
+* Integração com sistemas externos  
 
 ---
 
 ## 👨‍💻 Desenvolvedor
 
-Cauã Henrique de Oliveira
+Cauã Henrique de Oliveira  
 
 ---
 
 ## 🧠 Filosofia
 
-```
-Menos digitação,
-menos erro,
+Menos digitação,  
+menos erro,  
 mais produtividade.
-```
